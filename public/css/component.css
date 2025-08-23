@@ -1,0 +1,98 @@
+header {
+  /* border: green 1px solid; */
+  display: flex;
+  flex-direction: row;
+  margin: 0px;
+  gap: 1rem;
+  justify-content: center;
+  width: 100vw; 
+  max-width: 100%;
+  background-color: #002147;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+header > div:first-child {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.search {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: black;
+  width: 100%;
+  flex-basis: 50%;
+}
+
+.search > input {
+  flex-grow: 1;
+  height: 2.5rem;
+  border-radius: .5rem;
+  padding: 1rem;
+}
+
+.nav {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 1rem;
+  color: white;
+  font-weight: 300;
+  font-size: 1rem;
+}
+
+.nav > div:first-child:hover, div:nth-child(2):hover {
+  color: #869DFF;
+  cursor: pointer;
+}
+
+.nav > div > button {
+  font-size: 1rem;
+  font-weight: 500;
+  padding: .5rem 1rem;
+  border-radius: 4px;
+  outline: none;
+  border: none;
+}
+
+.nav > div > button:hover {
+  filter: brightness(0.9);
+}
+
+
+footer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  width: 100vw; 
+  max-width: 100%;
+  background-color: #002147;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  color: white;
+  gap: 2rem;
+}
+
+footer > div:first-child {
+  display: flex;
+  justify-content: flex-start;
+  padding-left: 2rem;
+  padding-right: 2rem;
+  flex-direction: column;
+}
+
+.bottom-footer {
+  display: flex;
+  justify-content: center;
+  flex-direction: row;
+  padding-left: 2rem;
+  padding-right: 2rem;
+  align-items: center;
+  gap: .5rem;
+}

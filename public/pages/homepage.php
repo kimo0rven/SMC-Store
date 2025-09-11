@@ -92,7 +92,7 @@ $products = $stmtProducts->fetchAll();
                             </div>
                             <p class="listing-title"><?= htmlspecialchars($product['name']); ?></p>
                             <div class="other-details">
-                                <span class="listing-condition">Lightly used</span>
+                                <span class="listing-condition"><?= html_entity_decode($product['condition']) ?></span>
                                 <span class="listing-time">
                                     <?php
                                     date_default_timezone_set('Asia/Manila');

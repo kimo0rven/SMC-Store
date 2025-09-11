@@ -2,7 +2,7 @@
 $db_server = 'localhost';
 $db_user = 'root';
 $db_pass = '';
-$db_name = "database";
+$db_name = "michaelite_store";
 $conn = '';
 
 try {

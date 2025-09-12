@@ -30,7 +30,7 @@ if (isset($_GET['id'])) {
 
 $product = $stmt->fetch(PDO::FETCH_ASSOC);
 
-print_r($product);
+// print_r($product);
 
 if (!$product) {
     die("Product not found.");
@@ -67,100 +67,95 @@ $total = count($images);
 </header>
 
 <main>
+    <div class="product-view-wrapper">
+
+    
     <div class="product-view-container">
-        <ul class="breadcrumb">
-        <li><a href="#">Home</a></li>
-        <li><a href="#">Fasion</a></li>
-        <li><a href="#">Hat</a></li>
-        <li>Italy</li>
-        </ul>
-
-        <div class="product-view-wrapper">
-            <div class="product-view-carousel">
-
-                <?php foreach ($images as $i => $img): ?>
-                    <input style="display: none;" type="radio" 
-                        name="product-view-slides" 
-                        id="product-view-slide<?= $i+1 ?>" 
-                        <?= $i === 0 ? 'checked' : '' ?>>
-                <?php endforeach; ?>
-
-                <div class="product-view-main">
-                    <?php foreach ($images as $i => $img): ?>
-                        <div class="product-view-slide" id="product-view-s<?= $i+1 ?>">
-                            <img src="./public/assets/images/<?= htmlspecialchars($img['src']) ?>" alt="<?= htmlspecialchars($img['alt']) ?>">
-                        </div>
-                    <?php endforeach; ?>
-
-                    <?php foreach ($images as $i => $img): 
-                        $prev = ($i === 0) ? $total : $i;
-                        $next = ($i + 2 > $total) ? 1 : $i + 2;
-                    ?>
-                        <label for="product-view-slide<?= $prev ?>" 
-                            class="product-view-nav product-view-prev product-view-s<?= $i+1 ?>">
-                            &#10094;
-                        </label>
-                        <label for="product-view-slide<?= $next ?>" 
-                            class="product-view-nav product-view-next product-view-s<?= $i+1 ?>">
-                            &#10095;
-                        </label>
-                    <?php endforeach; ?>
-                </div>
-
-                <div class="product-view-thumbs-wrapper">
-                    <div class="product-view-thumbs">
-                        <?php foreach ($images as $i => $img): ?>
-                            <label for="product-view-slide<?= $i+1 ?>">
-                                <img src="./public/assets/images/<?= htmlspecialchars($img['src']) ?>" alt="">
-                            </label>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-
+        
+        <div class="product-view-left">
+            <div class="product-view-gallery">
+                <?php foreach ($images as $i => $img) { ?>
+                    
+                        <img src="./public/assets/images/<?= htmlspecialchars($img['src']) ?>" 
+                        <?= htmlspecialchars($img['alt']) ?>">
+                    
+                <?php } ?>
             </div>
 
-            <div class="product-view-details">
-                <div class="product-view-seller-information">
-                    <img class="product-seller-image" src="./public/assets/images/temp_logo.png" alt="">
-                    <div class="product-view-seller-more-info">
-                        <p><?= htmlspecialchars($product['first_name'] . " " . $product['last_name']) ?></p>
-                        <div><a href="/">100% positive</a>(1 review)</div>
-                    </div>
-                </div>
-                <div class="product-view-name"><?= htmlspecialchars( $product['name']) ?></div>
-
-                <form class="price-offer" action="">
-                    <div class="price-input">
-                        <span class="currency">PHP</span>
-                        <input class="make-offer-input" type="number" name="offer_price" min="1" value="<?= htmlspecialchars($product['price'])?>" placeholder="0">
-                    </div>
-                    <button class="make-offer-btn">Make Offer</button>
-                </form>
-                
-                <div><button>Add to Bookmarks</button></div>
-                <div id="share-btn" style="display: flex; align-items:center; gap:1rem; cursor: pointer;">
-                <img src="./public/assets/images/icons/share_icon.png" alt="" style="width:20px; height:20px;">
-                <span>Share</span>
-                </div>
-
-                <div id="copy-msg" style="display:none; color:green; margin-top:0.5rem;">
-                Link copied!
-                </div>
+            <div class="product-view-description">
+                <p class="product-view-description-header">Description</p>
+                <p class="product-view-description-display"><?= htmlspecialchars($product['description']) ?></p>
             </div>
         </div>
 
-        <div class="product-view-bottom-details">
-            <h2>Additional Information</h2>
-            
-            <div>Condition <br>
-                <?= htmlspecialchars( $product['condition']) ?>
+        <div class="product-view-right">
+            <div class="product-view-seller-information">
+                <div class="product-view-seller-information-left"><img src="./public/assets/images/product1.jpg" alt=""></div>
+                <div class="product-view-seller-information-right">
+                    <div class="product-view-seller-name">
+                        <a href="/user.php"><?= htmlspecialchars($product['first_name'] . " " . $product['last_name']) ?></a>
+                    </div>
+
+                    <div class="product-view-seller-other">
+                        <span>100% positive</span>
+                        <span>Contact Seller</span>
+                    </div>
+                </div>
             </div>
-                            <br>
-            <div>
-                <?= htmlspecialchars( $product['description']) ?>
+
+            <div class="product-view-name">
+                <h1><?= htmlspecialchars($product['name']) ?></h1>
+                <div class="product-view-other-actions">
+                    <span><img src="./public/assets/images/icons/share_icon.png" alt=""></span>
+                    <span><img src="./public/assets/images/icons/bookmark_icon.png" alt=""></span>
+                </div>
+            </div>
+
+            <div class="product-view-price">
+                <?php if (!empty($product['discount']) && $product['discount'] > 0): ?>
+                    <?php
+                        
+                        $discountedPrice = $product['price'] - ($product['price'] * ($product['discount'] / 100));
+                    ?>
+                    <span style="text-decoration: line-through; color: #555;">
+                        <?= "PHP " . htmlspecialchars(number_format($product['price'], 2)) ?>
+                    </span>
+                    <span style="color: red; font-weight: bold;">
+                        <?= "PHP " . htmlspecialchars(number_format($discountedPrice, 2)) ?>
+                    </span>
+                    <span style="color: red; font-size: 0.6em;">
+                        Sale
+                    </span>
+                <?php else: ?>
+                    <span style="color: black; font-weight: bold;"></span>
+                        <?= "PHP " . htmlspecialchars(number_format($product['price'], 2)) ?>
+                    </span>
+                <?php endif; ?>
+            </div>
+
+            <div class="product-view-condition">
+                <span>Condition: </span><span class="product-view-condition-display"><?= htmlspecialchars($product['condition']) ?></span>
+            </div>
+            
+            <div class="product-view-action-buttons-container">
+                <button>Chat</button>
+
+                <div class="price-offer">
+                    <span class="price">PHP</span>
+                        <input type="number" id="price-offer-field" name="" value="112<?=number_format($product['price'], 2) ?>">
+                    
+                    <button class="make-offer-btn">Make Offer</button>
+                </div>
+
             </div>
         </div>
     </div>
+
+    <div class="product-view-recently-viewed">
+        <p class="product-view-recently-viewed-header">Recently Viewed</p>
+    </div>
+
+    
 </main>
 
 

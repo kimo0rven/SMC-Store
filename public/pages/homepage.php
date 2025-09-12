@@ -72,11 +72,34 @@ $products = $stmtProducts->fetchAll();
 
                         <div class="listing-details">
                             <div class="listing-first-row">
-                                <span class="listing-price">
-                                    <?= "PHP " . htmlspecialchars(number_format($product['price'], 2)); ?>
+                                <span class="listing-title">
+                                    <?= htmlspecialchars($product['name']); ?>
                                 </span>
                             </div>
-                            <p class="listing-title"><?= htmlspecialchars($product['name']); ?></p>
+                            <div class="listing-price-wrapper">
+
+                                <?php if (!empty($product['discount']) && $product['discount'] > 0): ?>
+                                    <?php
+                                        $discountedPrice = $product['price'] - ($product['price'] * ($product['discount'] / 100));
+                                    ?>
+                                    <span class="listing-price-new">
+                                        <?= "PHP " . htmlspecialchars(number_format($discountedPrice, 2)); ?>
+                                    </span>
+                                    <div>
+                                        <span class="listing-price-old">
+                                            <?= "PHP " . htmlspecialchars(number_format($product['price'], 2)); ?>
+                                        </span>
+                                        <span class="listing-price-discount">
+                                            <?= "-" . htmlspecialchars($product['discount']) . "%"; ?>
+                                        </span>
+                                    </div>
+                                <?php else: ?>
+                                    <span class="listing-price-new">
+                                        <?= "PHP " . htmlspecialchars(number_format($product['price'], 2)); ?>
+                                    </span>
+                                <?php endif; ?>
+
+                            </div>
                             <div class="other-details">
                                 <span class="listing-condition"><?= html_entity_decode($product['condition']) ?></span>
                                 <span class="listing-time">

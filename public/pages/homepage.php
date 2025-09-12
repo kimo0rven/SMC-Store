@@ -1,6 +1,8 @@
 <?php 
 session_start();
 include './includes/db_connection.php';
+include 'includes/config.php';
+
 
 $_SESSION['isLoggedIn'] = $_SESSION['isLoggedIn'] ?? false;
 

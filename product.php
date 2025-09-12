@@ -228,7 +228,7 @@ $total = count($images);
         .then(() => {
         const msg = document.getElementById('copy-msg');
         msg.style.display = 'block';
-        
+
         setTimeout(() => {
             msg.style.display = 'none';
         }, 2000);

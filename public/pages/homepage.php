@@ -1,6 +1,5 @@
 <?php 
 session_start();
-include 'includes/config.php';
 include './includes/db_connection.php';
 
 $_SESSION['isLoggedIn'] = $_SESSION['isLoggedIn'] ?? false;
@@ -19,22 +18,7 @@ $products = $stmtProducts->fetchAll();
 </head>
 <body>
 <header>
-    <div class="main-header">
-        <div>
-            <img src="/public/assets/images/temp_logo.png" style="height:auto; width:64px;" alt="Logo">
-        </div>
-        <div class="search">
-            <input type="search" placeholder="Search..">
-        </div>
-        <nav class="nav">
-            <?php if($_SESSION['isLoggedIn']) {
-                include './public/components/loggedin_dropdown.php';
-            } else {
-                echo '<div id="open-login-modal-button">Login</div>';
-            } ?>
-            <div id="sell-nav"><button>Sell</button></div>
-        </nav>
-    </div>
+    <?php include './public/components/header.php' ?>
     <div class="category-bar">
         <div class="category-list">
             <div><a href="">Likes</a></div>
@@ -61,7 +45,7 @@ $products = $stmtProducts->fetchAll();
     <div class="products-wrapper">
         <div class="products-display">
             <?php foreach ($products as $product): ?>
-                <a href="/" class="listing-card-link">
+                <a href="/product.php?id=<?= urlencode($product['listings_id']) ?>" target="_blank" class="listing-card-link">
                     <div class="listing-card" data-lazy-card>
                         <div class="product-image slideshow-container">
                             <div class="slides-track">
@@ -118,72 +102,14 @@ $products = $stmtProducts->fetchAll();
             <?php endforeach; ?>
         </div>
     </div>
+
 </main>
 
-
 <footer>
-        <div class="inner-footer">
-            <div>
-                <p>Top Searches</p>
-            </div>
-
-            <div>zara | iphone | uniqlo | ipad | dress | bag | digicam | lululemon | bag | tote bag | digital camera | lacoste | kindle | carhartt | miu miu | laptop | nike | backpack | longchamp | filipiniana | prada | love bonito | crocs | adidas | balenciaga | dior | jacket | onitsuka | seiko | wallet | boots | vivienne westwood | chanel | iphone 15 | macbook | camera | vintage | stussy | birkenstock | sofa | charles and keith | cardigan | fujifilm | kate spade | watch | iphone 12 | loewe | nintendo switch</div>
-        </div>
-
-        <div class=bottom-footer>
-            <div><img src="/public/assets/images/temp_logo.png" height="auto" width="32px" alt=""></div>
-            <div><?php echo "© ". date("Y") . " " . $title ?></div>
-        </div>
+    <?php include './public/components/footer.php'  ?>
 </footer>
 
-    <dialog id="login-modal">
-        <?php include 'public/pages/login.php'; ?>
-    </dialog>
-
 <script>
-
-    <?php if (!empty($_SESSION['error_message'])): ?>
-        const loginModal = document.getElementById('login-modal');
-        const errorEl = document.createElement('p');
-        errorEl.style.textAlign = 'center';
-        errorEl.className = 'login-error-message';
-        errorEl.textContent = <?= json_encode($_SESSION['error_message']) ?>;
-        loginModal.querySelector('form').prepend(errorEl);
-        loginModal.showModal();
-        <?php unset($_SESSION['error_message']); ?>
-    <?php endif; ?>
-
-    const modal = document.getElementById('login-modal');
-    const openButton = document.getElementById('open-login-modal-button');
-    const closeButton = document.getElementById('close-login-modal-button');
-
-    if (openButton) {
-        openButton.addEventListener('click', () => modal.showModal());
-    }
-
-    function closeDialogWithAnimation() {
-        modal.classList.add('closing');
-        modal.addEventListener('animationend', () => {
-            modal.classList.remove('closing');
-            modal.close();
-        }, { once: true });
-    }
-
-    if (closeButton) {
-        closeButton.addEventListener('click', closeDialogWithAnimation);
-    }
-
-    modal.addEventListener('click', (event) => {
-        const dialogDimensions = modal.getBoundingClientRect();
-        if (
-            event.clientX < dialogDimensions.left ||
-            event.clientX > dialogDimensions.right ||
-            event.clientY < dialogDimensions.top ||
-            event.clientY > dialogDimensions.bottom
-        ) {
-            closeDialogWithAnimation();
-        }
-    });
 
     function categ_myFunction() {
         document.getElementById("categ-myDropdown").classList.toggle("show");
@@ -208,7 +134,6 @@ $products = $stmtProducts->fetchAll();
         let slides = Array.from(track.children);
         let slideCount = slides.length;
 
-        // Clone first and last slides
         const firstClone = slides[0].cloneNode(true);
         const lastClone = slides[slideCount - 1].cloneNode(true);
         track.appendChild(firstClone);
@@ -250,7 +175,6 @@ $products = $stmtProducts->fetchAll();
             }
         });
 
-        // Buttons
         const prevBtn = container.querySelector('.prev');
         const nextBtn = container.querySelector('.next');
 

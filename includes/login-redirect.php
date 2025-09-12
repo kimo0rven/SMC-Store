@@ -8,11 +8,11 @@ if ($_SERVER['REQUEST_METHOD'] === "POST" && isset($_POST['login_submit'])) {
 
     $stmt = $pdo->prepare("SELECT * FROM user_account WHERE email = ?");
     $stmt->execute([$email]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    $user_account = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($user && $password) {
+    if ($user_account && $password) {
         $_SESSION['isLoggedIn'] = true;
-        $_SESSION['user_id'] = $user['user_account_id'];
+        $_SESSION['user_id'] = $user_account['user_account_id'];
         $_SESSION['email'] = $email;
         unset($_SESSION['error_message']);
         header("Location: /");

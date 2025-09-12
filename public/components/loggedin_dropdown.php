@@ -13,7 +13,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 12px 16px;
+    padding: 8px 12px;
 }
 
 .arrow {
@@ -69,9 +69,16 @@
 
 </style>
 
+<?php
+$stmt = $pdo->prepare("SELECT * FROM user WHERE user_id = ?");
+$stmt->execute([$_SESSION['user_id']]);
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+?>
+
 <div class="dropdown" id="user-dropdown">
     <button class="dropbtn" aria-haspopup="true" aria-expanded="false">
-        Hello, <?php echo $_SESSION['email']; ?>
+        Hello, <?php echo $user['first_name']; ?>
         <span class="arrow" aria-hidden="true"></span>
     </button>
 

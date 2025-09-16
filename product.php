@@ -2,42 +2,102 @@
 session_start();
 require './includes/db_connection.php';
 
-if (isset($_GET['id'])) {
-    $sql = "
-        SELECT l.*, u.*
-        FROM listings AS l
-        INNER JOIN user AS u ON l.listing_owner_id = u.user_id
-        WHERE l.listings_id = :id
-        LIMIT 1
-    ";
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute(['id' => $_GET['id']]);
-
-} elseif (isset($_GET['slug'])) {
-    $sql = "
-        SELECT l.*, u.*
-        FROM listings AS l
-        INNER JOIN user AS u ON l.listing_owner_id = u.user_id
-        WHERE l.slug = :slug
-        LIMIT 1
-    ";
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute(['slug' => $_GET['slug']]);
-
-} else {
-    die("No product specified.");
+if (empty($_GET['id']) || !is_numeric($_GET['id'])) {
+    die("No valid product specified.");
 }
 
-$product = $stmt->fetch(PDO::FETCH_ASSOC);
+$productId = (int) $_GET['id'];
 
-// print_r($product);
+$productQuery = "
+    SELECT 
+        l.*, 
+        u.*, 
+        s.subcategory_name, 
+        c.category_name,
+        l.date_created AS user_date_created,
+        li.image_url,
+        li.is_primary
+    FROM listings AS l
+    INNER JOIN `user` AS u 
+        ON l.listing_owner_id = u.user_id
+    INNER JOIN subcategories AS s 
+        ON l.subcategory_id = s.subcategory_id
+    INNER JOIN categories AS c 
+        ON s.category_id = c.category_id
+    LEFT JOIN listing_images AS li
+        ON l.listings_id = li.listings_id
+    WHERE l.listings_id = :id
+    ORDER BY li.is_primary DESC, li.image_id ASC
+";
 
-if (!$product) {
+$stmt = $pdo->prepare($productQuery);
+$stmt->execute(['id' => $productId]);
+$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+if (!$rows) {
     die("Product not found.");
 }
 
-$productImg = '/products/'.$product['image_url'];
+$product = $rows[0];
+$product['images'] = [];
 
+foreach ($rows as $row) {
+    if (!empty($row['image_url'])) {
+        $product['images'][] = [
+            'url'        => $row['image_url'],
+            'is_primary' => $row['is_primary']
+        ];
+    }
+}
+
+// Fetch seller reviews
+$reviewQuery = "
+    SELECT 
+        r.*, 
+        u.first_name,
+        u.last_name, 
+        l.name AS listing_name,
+        r.date_created as review_datetime
+    FROM review AS r
+    INNER JOIN user AS u 
+        ON r.seller_id = u.user_id
+    INNER JOIN listings AS l 
+        ON r.listing_id = l.listings_id
+    WHERE r.seller_id = :seller_id
+";
+$stmt2 = $pdo->prepare($reviewQuery);
+$stmt2->execute(['seller_id' => $product['listing_owner_id']]);
+$reviews = $stmt2->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+// print_r($reviews);
+$averagePercentage = 0;
+$ratingLabel = 'No reviews yet';
+
+if (!empty($reviews)) {
+    $totalRating = array_sum(array_column($reviews, 'rating'));
+    $averageRating = $totalRating / count($reviews);
+    $averagePercentage = ($averageRating / count($reviews)) * 100; 
+
+    if ($averagePercentage >= 70) {
+        $ratingLabel = 'Positive';
+    } elseif ($averagePercentage >= 40) {
+        $ratingLabel = 'Neutral';
+    } else {
+        $ratingLabel = 'Negative';
+    }
+}
+
+$listingCountQuery = "
+    SELECT COUNT(*) 
+    FROM listings
+    WHERE listing_owner_id = :listing_owner_id
+    AND `listing_status` = 'sold'
+";
+$stmt3 = $pdo->prepare($listingCountQuery);
+$stmt3->execute(['listing_owner_id' => $product['listing_owner_id']]);
+$listingCount = $stmt3->fetchColumn();
+
+$productImg = '/products/' . $product['image_url'];
 $images = [
     ["src" => $productImg, "alt" => "Pink shorts front view"],
     ["src" => "product1.jpg", "alt" => "White shorts"],
@@ -46,8 +106,34 @@ $images = [
     ["src" => "product4.jpg", "alt" => "Orange shorts"],
     ["src" => "product5.jpg", "alt" => "Orange shorts"]
 ];
-$total = count($images);
+$totalImages = count($images);
+
+$price = $product['price'];
+if (!empty($product['discount']) && $product['discount'] > 0) {
+    $price -= $price * ($product['discount'] / 100);
+}
+$price = number_format($price, 2);
+
+$stmt = $pdo->prepare("
+    SELECT l.*, 
+           CASE WHEN b.bookmark_id IS NOT NULL THEN 1 ELSE 0 END AS is_bookmarked
+    FROM listings l
+    LEFT JOIN bookmark b 
+        ON b.listings_id = l.listings_id 
+       AND b.user_id = :current_user_id
+    WHERE l.listings_id = :listings_id
+");
+$stmt->execute([
+    ':current_user_id' => $_SESSION['user_id'] ?? 0,
+    ':listings_id'     => $_GET['id'] ?? 0
+]);
+$product1 = $stmt->fetch(PDO::FETCH_ASSOC);
+
+$isBookmarked = !empty($product1['is_bookmarked']);
+
 ?>
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -61,78 +147,112 @@ $total = count($images);
         
     </style>
 </head>
-<body>
+<body style="gap:2rem">
 <header>
     <?php include './public/components/header.php' ?>
 </header>
 
 <main>
     <div class="product-view-wrapper">
-
-    
+    <span id="test" style="display: none" type="text" name="" ><?= htmlspecialchars(json_encode($reviews), ENT_QUOTES, 'UTF-8') ?></span>
+    <span id="listingCount" style="display: none" type="text"><?php echo htmlspecialchars($listingCount); ?></span>
     <div class="product-view-container">
-        
         <div class="product-view-left">
             <div class="product-view-gallery">
-                <?php foreach ($images as $i => $img) { ?>
-                    
-                        <img src="./public/assets/images/<?= htmlspecialchars($img['src']) ?>" 
-                        <?= htmlspecialchars($img['alt']) ?>">
-                    
-                <?php } ?>
+                <?php foreach ($product['images'] as $img): ?>
+                    <img src="/public/assets/images/products/<?= htmlspecialchars($img['url']) ?>" 
+                        alt="<?= htmlspecialchars($product['name']) ?>">
+                <?php endforeach; ?>
+
+            </div>
+            <div id="lightbox" class="lightbox">
+                <span class="lightbox-close">&times;</span>
+                <img class="lightbox-image" src="" alt="">
+                <span class="lightbox-prev">&#10094;</span>
+                <span class="lightbox-next">&#10095;</span>
+
+                <div class="lightbox-thumbnails"></div>
             </div>
 
             <div class="product-view-description">
                 <p class="product-view-description-header">Description</p>
-                <p class="product-view-description-display"><?= htmlspecialchars($product['description']) ?></p>
+                <p class="product-view-description-display"><?= nl2br(htmlspecialchars($product['description'])) ?></p>
             </div>
+
+            
         </div>
-
         <div class="product-view-right">
-            <div class="product-view-seller-information">
-                <div class="product-view-seller-information-left"><img src="./public/assets/images/product1.jpg" alt=""></div>
-                <div class="product-view-seller-information-right">
-                    <div class="product-view-seller-name">
-                        <a href="/user.php"><?= htmlspecialchars($product['first_name'] . " " . $product['last_name']) ?></a>
+            <div id="sellerInfo" class="product-view-seller-information" data-user-id="<?= htmlspecialchars($product['user_id']) ?>">
+                <div class="product-view-seller-information-wrapper">
+                    <div class="product-view-seller-information-left">
+                        <img src="./public/assets/images/avatars/<?= htmlspecialchars($product['avatar']) ?>" alt="<?= htmlspecialchars($product['first_name'] . " " . $product['last_name']) ?>">
                     </div>
+                    <div class="product-view-seller-information-right">
+                        <div class="product-view-seller-name">
+                        <a href="/user.php"><?= htmlspecialchars($product['first_name'] . " " . $product['last_name']) ?></a>
+                        </div>
 
-                    <div class="product-view-seller-other">
-                        <span>100% positive</span>
-                        <span>Contact Seller</span>
+                        <div style="letter-spacing: 1px" class="product-view-seller-other">
+                            <span id="seller-rating">
+                                <?php if (!empty($reviews)): ?>
+                                    <?= round($averagePercentage, 2) ?>% <?= htmlspecialchars($ratingLabel) ?> Rating
+                                <?php else: ?>
+                                    <?= htmlspecialchars($ratingLabel) ?>
+                                <?php endif; ?>
+                            </span>
+                        </div>
                     </div>
                 </div>
+
+                <div class="product-view-seller-information-modal">&#10095;</div>
+
             </div>
+            
+            <?php include './public/components/seller_modal.php' ?>
 
             <div class="product-view-name">
                 <h1><?= htmlspecialchars($product['name']) ?></h1>
                 <div class="product-view-other-actions">
-                    <span><img src="./public/assets/images/icons/share_icon.png" alt=""></span>
-                    <span><img src="./public/assets/images/icons/bookmark_icon.png" alt=""></span>
+                    <span id='share-btn' ><img src="./public/assets/images/icons/share_url_icon.png" alt=""></span>
+                    <span 
+                        id="product-view-bookmark-btn"
+                        data-listings-id="<?= (int)$product['listings_id'] ?>"
+                        data-user-id="<?= isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0 ?>"
+                        data-bookmarked="<?= $isBookmarked ? 1 : 0 ?>"
+                    >
+                        <img src="/public/assets/images/icons/<?= $isBookmarked ? 'bookmark_added_icon.png' : 'bookmark_add_icon.png' ?>" alt="Bookmark">
+                    </span>
                 </div>
             </div>
 
             <div class="product-view-price">
+
                 <?php if (!empty($product['discount']) && $product['discount'] > 0): ?>
                     <?php
                         
                         $discountedPrice = $product['price'] - ($product['price'] * ($product['discount'] / 100));
                     ?>
-                    <span style="text-decoration: line-through; color: #555;">
+                    <span style="text-decoration: line-through; color: #000000;">
                         <?= "PHP " . htmlspecialchars(number_format($product['price'], 2)) ?>
                     </span>
-                    <span style="color: red; font-weight: bold;">
+                    <div style="display: flex; flex-direction: row; gap: .5rem">
+                        <span style="color: red;">
                         <?= "PHP " . htmlspecialchars(number_format($discountedPrice, 2)) ?>
-                    </span>
-                    <span style="color: red; font-size: 0.6em;">
+                        </span>
+
+                        <div>
+                            <span style="display: flex; font-size: 1rem"> -10%</span>
+                        </div>
+                    </div>
+                    <span style="color: red; font-size: 0.6em; font-weight: 300">
                         Sale
                     </span>
                 <?php else: ?>
-                    <span style="color: black; font-weight: bold;"></span>
+                    <span style="color: black; font-weight: bold;">
                         <?= "PHP " . htmlspecialchars(number_format($product['price'], 2)) ?>
                     </span>
                 <?php endif; ?>
             </div>
-
             <div class="product-view-condition">
                 <span>Condition: </span><span class="product-view-condition-display"><?= htmlspecialchars($product['condition']) ?></span>
             </div>
@@ -142,7 +262,7 @@ $total = count($images);
 
                 <div class="price-offer">
                     <span class="price">PHP</span>
-                        <input type="number" id="price-offer-field" name="" value="112<?=number_format($product['price'], 2) ?>">
+                    <input type="number" id="price-offer-field" name="" value="<?= htmlspecialchars(number_format($product['price'], 2, '.', '')) ?>">
                     
                     <button class="make-offer-btn">Make Offer</button>
                 </div>
@@ -153,9 +273,19 @@ $total = count($images);
 
     <div class="product-view-recently-viewed">
         <p class="product-view-recently-viewed-header">Recently Viewed</p>
+        <div class="products-display">
+            
+        </div>
     </div>
-
     
+    <div>
+        <ul class="breadcrumb">
+            <li><a href="/">Home</a></li>
+            <li><a href="/shop"><?= htmlspecialchars($product['category_name']) ?></a></li>
+            <li><a href="/shop/electronics"><?= htmlspecialchars($product['subcategory_name']) ?></a></li>
+            <li><?= htmlspecialchars($product['name']) ?></li>
+        </ul>
+    </div>
 </main>
 
 
@@ -164,75 +294,156 @@ $total = count($images);
 </footer>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-    const radios = Array.from(document.querySelectorAll('[name="product-view-slides"]'));
-    const slides = Array.from(document.querySelectorAll('.product-view-main .product-view-slide'));
-    const allNavs = Array.from(document.querySelectorAll('.product-view-main .product-view-nav'));
-    const thumbsWrapper = document.querySelector('.product-view-thumbs-wrapper');
-    const thumbsContainer = document.querySelector('.product-view-thumbs');
-    const thumbs = Array.from(document.querySelectorAll('.product-view-thumbs label'));
+    <?php include './public/javascripts/require_login.js' ?>
 
-    function getActiveIndex() {
-        return Math.max(0, radios.findIndex(r => r.checked));
-    }
+document.addEventListener('DOMContentLoaded', () => {
+    const galleryImages = document.querySelectorAll('.product-view-gallery img');
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = lightbox.querySelector('.lightbox-image');
+    const closeBtn = lightbox.querySelector('.lightbox-close');
+    const prevBtn = lightbox.querySelector('.lightbox-prev');
+    const nextBtn = lightbox.querySelector('.lightbox-next');
+    const thumbnailsContainer = lightbox.querySelector('.lightbox-thumbnails');
 
-    function updateSlides(activeIndex) {
-        slides.forEach((s, i) => s.classList.toggle('is-active', i === activeIndex));
-    }
+    let currentIndex = 0;
 
-    function updateNavVisibility(activeIndex) {
-        allNavs.forEach(n => n.style.display = 'none');
-        const pair = document.querySelectorAll(`.product-view-main .product-view-nav.product-view-s${activeIndex + 1}`);
-        pair.forEach(n => n.style.display = 'block');
-    }
-
-    function updateThumbsShift(activeIndex) {
-        if (!thumbsContainer || !thumbsWrapper || thumbs.length === 0) return;
-
-        const thumbWidth = thumbs[0].offsetWidth;
-        const gap = parseFloat(getComputedStyle(thumbsContainer).gap) || 0;
-        const wrapperWidth = thumbsWrapper.clientWidth;
-
-        const perRow = Math.max(1, Math.floor((wrapperWidth + gap) / (thumbWidth + gap)));
-
-        const group = Math.floor(activeIndex / perRow);
-        const shift = group * ((thumbWidth + gap) * perRow);
-
-        thumbsContainer.style.transform = `translateX(-${shift}px)`;
-    }
-
-    function applyAll() {
-        const idx = getActiveIndex();
-        updateSlides(idx);
-        updateNavVisibility(idx);
-        updateThumbsShift(idx);
-    }
-
-    radios.forEach((r, i) => r.addEventListener('change', applyAll));
-
-    applyAll();
-    window.addEventListener('resize', () => {
-
-        updateThumbsShift(getActiveIndex());
-    });
+    galleryImages.forEach((img, index) => {
+        const thumb = document.createElement('img');
+        thumb.src = img.src;
+        thumb.dataset.index = index;
+        thumb.addEventListener('click', () => openLightbox(index));
+        thumbnailsContainer.appendChild(thumb);
     });
 
-    document.getElementById('share-btn').addEventListener('click', function() {
+    const thumbs = thumbnailsContainer.querySelectorAll('img');
 
-    navigator.clipboard.writeText(window.location.href)
-        .then(() => {
-        const msg = document.getElementById('copy-msg');
-        msg.style.display = 'block';
+    function updateActiveThumbnail() {
+        thumbs.forEach(t => t.classList.remove('active'));
+        thumbs[currentIndex].classList.add('active');
+    }
 
-        setTimeout(() => {
-            msg.style.display = 'none';
-        }, 2000);
-        })
-        .catch(err => {
-        console.error('Failed to copy: ', err);
-        });
+    function openLightbox(index) {
+        currentIndex = index;
+        lightboxImg.src = galleryImages[currentIndex].src;
+        lightbox.classList.add('visible');
+        updateActiveThumbnail();
+    }
+
+    function closeLightbox() {
+        lightbox.classList.remove('visible');
+    }
+
+    function showPrev() {
+        currentIndex = (currentIndex - 1 + galleryImages.length) % galleryImages.length;
+        lightboxImg.src = galleryImages[currentIndex].src;
+        updateActiveThumbnail();
+    }
+
+    function showNext() {
+        currentIndex = (currentIndex + 1) % galleryImages.length;
+        lightboxImg.src = galleryImages[currentIndex].src;
+        updateActiveThumbnail();
+    }
+
+    galleryImages.forEach((img, index) => {
+        img.addEventListener('click', () => openLightbox(index));
+    });
+
+    closeBtn.addEventListener('click', closeLightbox);
+    prevBtn.addEventListener('click', showPrev);
+    nextBtn.addEventListener('click', showNext);
+
+    lightbox.addEventListener('click', (e) => {
+        if (e.target === lightbox) closeLightbox();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (lightbox.classList.contains('visible')) {
+            if (e.key === 'ArrowLeft') showPrev();
+            if (e.key === 'ArrowRight') showNext();
+            if (e.key === 'Escape') closeLightbox();
+        }
+    });
+});
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (typeof initModal === 'function') {
+            initModal({
+                openBtn: document.getElementById('sellerInfo'),
+                dialog: document.getElementById('sellerDialog'),
+                closeBtn: document.querySelector('#sellerDialog .seller-dialog-close'),
+                content: document.querySelector('#sellerDialog .seller-dialog-content'),
+                onOpen: (dialog) => {
+                    const rating = document.getElementById('seller-rating')?.textContent || '';
+                    const test = document.getElementById('test')?.textContent || '';
+                    const listingCount = document.getElementById('listingCount')?.textContent || '';
+                    dialog.dataset.reviews = test;
+                    dialog.dataset.rating = rating;
+                    dialog.dataset.listingCount = listingCount;
+                }
+            });
+        }
+
+        const shareBtn = document.getElementById('share-btn');
+        if (shareBtn) {
+            shareBtn.addEventListener('click', () => {
+                const pageUrl = window.location.href;
+                navigator.clipboard.writeText(pageUrl)
+                    .then(() => showCopiedMessage('Link copied to clipboard!'))
+                    .catch(err => {
+                        console.error('Failed to copy:', err);
+                        showCopiedMessage('Failed to copy link');
+                    });
+            });
+        }
+
+        function showCopiedMessage(message) {
+            const msg = document.createElement('div');
+            msg.textContent = message;
+            msg.className = 'copied-message';
+            document.body.appendChild(msg);
+            requestAnimationFrame(() => msg.classList.add('visible'));
+            setTimeout(() => {
+                msg.classList.remove('visible');
+                msg.addEventListener('transitionend', () => msg.remove(), { once: true });
+            }, 2000);
+        }
+
+        const bookmarkBtn = document.getElementById('product-view-bookmark-btn');
+        if (bookmarkBtn) {
+            let isBookmarked = parseInt(bookmarkBtn.dataset.bookmarked, 10) === 1;
+            const listingsId = parseInt(bookmarkBtn.dataset.listingsId, 10);
+            const userId     = parseInt(bookmarkBtn.dataset.userId, 10);
+
+            bookmarkBtn.addEventListener('click', () => {
+                requireLogin(() => {
+        
+                    const url = isBookmarked ? '/includes/unbookmark.php' : '/includes/bookmark.php';
+                    const body = `listings_id=${encodeURIComponent(listingsId)}&user_id=${encodeURIComponent(userId)}`;
+
+                    fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            isBookmarked = !isBookmarked;
+                            bookmarkBtn.innerHTML = `<img src="/public/assets/images/icons/${isBookmarked ? 'bookmark_added_icon.png' : 'bookmark_add_icon.png'}" alt="Bookmark">`;
+                        } else {
+                            alert(data.message || 'Error updating bookmark');
+                        }
+                    })
+                    .catch(err => console.error(err));
+                });
+            });
+        }
     });
 </script>
+
+
 
 </body>
 </html>

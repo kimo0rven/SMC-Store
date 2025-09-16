@@ -16,6 +16,11 @@
     padding: 8px 12px;
 }
 
+.dropbtn:hover {
+    transform: translateY(0px);
+    transform: none;
+}
+
 .arrow {
     width: 16px;
     height: 16px;
@@ -33,7 +38,7 @@
     background-color: #f9f9f9;
     min-width: 160px;
     box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-    margin-top: 4px;
+    margin-top: 5px;
     border-radius: .5rem;
     z-index: 999;
 }

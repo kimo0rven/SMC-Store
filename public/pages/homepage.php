@@ -3,10 +3,9 @@ session_start();
 include './includes/db_connection.php';
 include 'includes/config.php';
 
-
 $_SESSION['isLoggedIn'] = $_SESSION['isLoggedIn'] ?? false;
 
-$stmt = $pdo->prepare("
+$sql = "
     SELECT 
         l.listings_id,
         l.listing_owner_id,
@@ -19,7 +18,7 @@ $stmt = $pdo->prepare("
         l.listing_status,
         l.date_created,
         l.date_modified,
-        l.condition,
+        l.item_condition,
         l.discount,
         li.image_url,
         li.is_primary
@@ -27,8 +26,19 @@ $stmt = $pdo->prepare("
     LEFT JOIN listing_images li 
         ON l.listings_id = li.listings_id
     WHERE l.listing_status = 'active'
-    ORDER BY l.listings_id, li.is_primary DESC
-");
+";
+
+if (isset($_GET['search_query']) && !empty($_GET['search_query'])) {
+    $searchQuery = '%' . $_GET['search_query'] . '%';
+    $sql .= " AND (l.name LIKE :search_query OR l.brand LIKE :search_query OR l.description LIKE :search_query)";
+}
+
+$sql .= " ORDER BY l.listings_id, li.is_primary DESC";
+$stmt = $pdo->prepare($sql);
+if (!empty($searchQuery)) {
+    $stmt->bindParam(':search_query', $searchQuery);
+}
+
 $stmt->execute();
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -38,20 +48,20 @@ foreach ($rows as $row) {
 
     if (!isset($products[$id])) {
         $products[$id] = [
-            'listings_id'     => $row['listings_id'],
-            'listing_owner_id'=> $row['listing_owner_id'],
-            'name'            => $row['name'],
-            'brand'           => $row['brand'],
-            'description'     => $row['description'],
-            'price'           => $row['price'],
-            'stock_quantity'  => $row['stock_quantity'],
-            'subcategory_id'  => $row['subcategory_id'],
-            'listing_status'  => $row['listing_status'],
-            'date_created'    => $row['date_created'],
-            'date_modified'   => $row['date_modified'],
-            'condition'       => $row['condition'],
-            'discount'        => $row['discount'],
-            'images'          => []
+            'listings_id'       => $row['listings_id'],
+            'listing_owner_id'  => $row['listing_owner_id'],
+            'name'              => $row['name'],
+            'brand'             => $row['brand'],
+            'description'       => $row['description'],
+            'price'             => $row['price'],
+            'stock_quantity'    => $row['stock_quantity'],
+            'subcategory_id'    => $row['subcategory_id'],
+            'listing_status'    => $row['listing_status'],
+            'date_created'      => $row['date_created'],
+            'date_modified'     => $row['date_modified'],
+            'item_condition'    => $row['item_condition'],
+            'discount'          => $row['discount'],
+            'images'            => []
         ];
     }
 
@@ -62,11 +72,12 @@ foreach ($rows as $row) {
         ];
     }
 }
-
 $products = array_values($products);
-// echo "<pre>";
-// print_r($products);
-// echo "</pre>";
+
+$sql = "SELECT * FROM categories";
+$stmt = $pdo->prepare($sql);
+$stmt->execute();
+$categories = $stmt -> fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -79,7 +90,7 @@ $products = array_values($products);
 <body>
 <header>
     <?php include './public/components/header.php' ?>
-    <div class="category-bar">
+    <!-- <div class="category-bar">
         <div class="category-list">
             <div><a href="">Likes</a></div>
             <div><a href="">Fashion</a></div>
@@ -98,18 +109,26 @@ $products = array_values($products);
                 </div>
             </div>
         </div>
-    </div>
+    </div> -->
 </header>
 
-<main>
+<main style="flex-direction:column">
+    <div class="products-categories">
+        <?php foreach ($categories as $category): ?>
+        <div class="products-category">
+            <img src="/public/assets/images/product1.jpg" alt="">
+            <p><?= htmlspecialchars($category['category_name']) ?></p>
+        </div>
+        <?php endforeach; ?>
+    </div>
+    
     <div class="products-wrapper">
         <div class="products-display">
-            <?php foreach ($products as $product): ?>
+            <?php foreach ($products as $listing): ?>
                 <?php include './public/components/listing_card.php'  ?>
             <?php endforeach; ?>
         </div>
     </div>
-
 </main>
 
 <footer>

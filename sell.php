@@ -1,17 +1,18 @@
 <?php
 session_start();
+
+if (empty($_SESSION['isLoggedIn']) || $_SESSION['isLoggedIn'] !== true) {
+    header("Location: index.php");
+    exit();
+}
+
 require './includes/db_connection.php';
 
 $categQuery = "SELECT * FROM categories";
 $stmt = $pdo->prepare($categQuery);
 $stmt->execute();
-
 $categories = $stmt->fetchAll();
-
-$categoryId = isset($_GET['category_id']) ? (int) $_GET['category_id'] : 0;
-
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en">
@@ -21,31 +22,28 @@ $categoryId = isset($_GET['category_id']) ? (int) $_GET['category_id'] : 0;
     <title>Sell | Michaelite Store</title>
     <link rel="stylesheet" href="/public/css/style.css">
     <link rel="stylesheet" href="/public/css/component.css">
-
-    <style>
-        
-    </style>
 </head>
-<body style="gap:2rem">
+<body>
 <header>
     <?php include './public/components/header.php' ?>
 </header>
 
 <main>
-    <div class="sell-page-container">
+    <form action="./includes/submit_listing.php" method="POST" enctype="multipart/form-data" class="sell-page-container">
+        
         <div class="sell-page-upload-page">
-            <div class="upload-container" id="upload-container">
-                <img src="./public/assets/images/icons/image_upload_icon.png" alt="">
-                <p>Click or drag images here<span><br>(Up to 6 photos)</span></p>
-                <input type="file" id="file-input" accept="image/*" multiple hidden>
-            </div>
-            <span>&#128161; Tip: Re-arrange photos to change cover</span>
-            <div class="preview" id="preview"></div>
+            <label class="upload-container">
+                <img src="/public/assets/images/icons/image_upload_icon.png" alt="">
+                <p>Click to select images<span><br>(Up to 6 photos)</span></p>
 
+                <input type="file" name="images[]" accept="image/*" multiple>
+                <br><small id="file-count">No files chosen</small>
+            </label>
+
+            <div class="preview" id="preview"></div>
         </div>
 
         <div class="sell-page-details-page">
-
             <div class="sell-page-details-category-wrapper">
                 <input type="hidden" name="category" id="sell-page-details-category-input">
                 <input type="hidden" name="subcategory" id="sell-page-details-subcategory-input">
@@ -63,7 +61,9 @@ $categoryId = isset($_GET['category_id']) ? (int) $_GET['category_id'] : 0;
                         </ul>
                     </div>
                 </div>
+            </div>
 
+            <div>
                 <div class="sell-page-details-dropdown" id="sell-page-details-subcategory-dropdown" style="display:none;">
                     <div class="sell-page-details-dropdown-selected">Select Subcategory</div>
                     <div class="sell-page-details-dropdown-list">
@@ -74,266 +74,100 @@ $categoryId = isset($_GET['category_id']) ? (int) $_GET['category_id'] : 0;
             </div>
 
             <div>
-                <input placeholder="Listing Title" type="text">
+                <input placeholder="Listing Title" type="text" name="title" required>
             </div>
-            
-            <span>About the item</span>
+
+            <input type="text" name="brand" placeholder="Brand" required>
+
             <div id="select-test">
-                <span>condition</span>
-                <input type="radio" id="age1" name="age" value="30">
-                <label for="age1">0 - 30</label><br>
-                <input type="radio" id="age2" name="age" value="60">
-                <label for="age2">31 - 60</label><br>  
-                <input type="radio" id="age3" name="age" value="100">
-                <label for="age3">61 - 100</label><br>
+                <span>Condition</span>
+                <select name="condition" required>
+                    <option value="Brand New">Brand New</option>
+                    <option value="Like New">Like New</option>
+                    <option value="Lightly Used">Lightly Used</option>
+                    <option value="Well Used">Well Used</option>
+                    <option value="Heavily Used">Heavily Used</option>
+                    <option value="Refurbished">Refurbished</option>
+                </select>
+            </div>
+
+            <div class="sell-page-details-other">
+                <div>
+                    <span>Price</span>
+                    <input type="number" name="price" min="0" step="0.01" required>
+                </div>
+                <div>
+                    <span>Stock</span>
+                    <input type="number" name="stock" min="1" required>
+                </div>
             </div>
 
             <div>
-                <span>price</span>
-                <input type="number" name="" id="">
-            </div>
-            
-            <div>
-                <span>description</span>
-                <textarea name="" id=""></textarea>
+                <span>Description</span>
+                <textarea rows="15" name="description" required></textarea>
             </div>
 
-            
-
+            <div class="sell-page-details-last">
+                <button type="submit">Post Listing</button>
+            </div>
         </div>
-    </div>
+    </form>
 </main>
 
-
 <footer>
-    <?php include './public/components/footer.php'  ?>
+    <?php include './public/components/footer.php' ?>
 </footer>
 
+<script src="./public/javascripts/category_dropdown.js"></script>
+
 <script>
-    const uploadContainer = document.getElementById('upload-container');
-    const fileInput = document.getElementById('file-input');
-    const preview = document.getElementById('preview');
+const fileInput = document.querySelector('input[type="file"][name="images[]"]');
+const fileCount = document.getElementById('file-count');
+const preview = document.getElementById('preview');
 
-    let filesArray = [];
+fileInput.addEventListener('change', () => {
+    const files = Array.from(fileInput.files);
+    preview.innerHTML = '';
 
-    uploadContainer.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', handleFiles);
-
-    uploadContainer.addEventListener('dragover', e => {
-        e.preventDefault();
-        uploadContainer.classList.add('dragover');
-    });
-
-    uploadContainer.addEventListener('dragleave', () => {
-        uploadContainer.classList.remove('dragover');
-    });
-
-    uploadContainer.addEventListener('drop', e => {
-        e.preventDefault();
-        uploadContainer.classList.remove('dragover');
-        handleFiles({ target: { files: e.dataTransfer.files } });
-    });
-
-    function handleFiles(e) {
-        const newFiles = Array.from(e.target.files);
-
-        if (filesArray.length + newFiles.length > 6) {
-            alert('You can only upload up to 6 images.');
-            return;
-        }
-
-        newFiles.forEach(file => {
-            if (!file.type.startsWith('image/')) return;
-
-            filesArray.push(file);
-
-            const reader = new FileReader();
-            reader.onload = () => {
-                const item = document.createElement('div');
-                item.classList.add('preview-item');
-                item.draggable = true;
-
-                const img = document.createElement('img');
-                img.src = reader.result;
-
-                const removeBtn = document.createElement('button');
-                removeBtn.innerHTML = '×';
-                removeBtn.classList.add('remove-btn');
-                removeBtn.addEventListener('click', () => {
-                    filesArray = filesArray.filter(f => f !== file);
-                    item.remove();
-                    updateCoverLabel();
-                });
-
-                item.appendChild(img);
-                item.appendChild(removeBtn);
-                preview.appendChild(item);
-
-                addDragAndDrop(item);
-                updateCoverLabel();
-            };
-            reader.readAsDataURL(file);
-        });
-
+    if (files.length > 6) {
+        alert('You can only upload up to 6 images.');
         fileInput.value = '';
+        fileCount.textContent = 'No files chosen';
+        return;
     }
 
-    // Drag & Drop Reordering
-    let draggedItem = null;
-
-    function addDragAndDrop(item) {
-        item.addEventListener('dragstart', () => {
-            draggedItem = item;
-            item.classList.add('dragging');
-        });
-
-        item.addEventListener('dragend', () => {
-            draggedItem.classList.remove('dragging');
-            draggedItem = null;
-            updateFilesArrayOrder();
-            updateCoverLabel();
-        });
-
-        item.addEventListener('dragover', e => {
-            e.preventDefault();
-            const draggingOver = e.target.closest('.preview-item');
-            if (draggingOver && draggingOver !== draggedItem) {
-                const items = Array.from(preview.children);
-                const draggedIndex = items.indexOf(draggedItem);
-                const overIndex = items.indexOf(draggingOver);
-                if (draggedIndex < overIndex) {
-                    preview.insertBefore(draggedItem, draggingOver.nextSibling);
-                } else {
-                    preview.insertBefore(draggedItem, draggingOver);
-                }
-            }
-        });
+    const invalidFiles = files.filter(file => !file.type.startsWith('image/'));
+    if (invalidFiles.length > 0) {
+        alert('Only image files are allowed.');
+        fileInput.value = '';
+        fileCount.textContent = 'No files chosen';
+        return;
     }
 
-    function updateFilesArrayOrder() {
-        const items = Array.from(preview.children);
-        const newOrder = [];
-        items.forEach(item => {
-            const imgSrc = item.querySelector('img').src;
-            const file = filesArray.find(f => {
-                return URL.createObjectURL(f) === imgSrc || f.previewSrc === imgSrc;
-            });
-            if (file) newOrder.push(file);
-        });
-        filesArray = newOrder;
+    if (files.length === 0) {
+        fileCount.textContent = 'No files chosen';
+    } else if (files.length === 1) {
+        fileCount.textContent = '1 file chosen';
+    } else {
+        fileCount.textContent = `${files.length} files chosen`;
     }
 
+    files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = e => {
+            const item = document.createElement('div');
+            item.classList.add('preview-item');
 
-    function updateCoverLabel() {
-        // Remove old labels
-        preview.querySelectorAll('.cover-label').forEach(label => label.remove());
+            const img = document.createElement('img');
+            img.src = e.target.result;
 
-        const firstItem = preview.querySelector('.preview-item');
-        if (firstItem) {
-            const label = document.createElement('div');
-            label.classList.add('cover-label');
-            label.textContent = 'Cover';
-            firstItem.appendChild(label);
-        }
-    }
-
-    function initSellPageDetailsDropdown(dropdownId, hiddenInputId, onSelect) {
-        const dropdown = document.getElementById(dropdownId);
-        const selected = dropdown.querySelector('.sell-page-details-dropdown-selected');
-        const listContainer = dropdown.querySelector('.sell-page-details-dropdown-list');
-        const searchInput = dropdown.querySelector('.sell-page-details-dropdown-search');
-        const list = dropdown.querySelector('ul');
-        const hiddenInput = document.getElementById(hiddenInputId);
-
-        // Toggle dropdown
-        selected.addEventListener('click', () => {
-            const isOpen = listContainer.style.display === 'flex';
-            document.querySelectorAll('.sell-page-details-dropdown-list').forEach(dl => dl.style.display = 'none');
-            listContainer.style.display = isOpen ? 'none' : 'flex';
-            searchInput.value = '';
-            filterList('');
-            searchInput.focus();
-        });
-
-        // Filter list
-        function filterList(term) {
-            Array.from(list.children).forEach(li => {
-                li.style.display = li.textContent.toLowerCase().includes(term.toLowerCase()) ? '' : 'none';
-            });
-        }
-
-        searchInput.addEventListener('input', () => {
-            filterList(searchInput.value);
-        });
-
-        // Select item
-        list.addEventListener('click', e => {
-            if (e.target.tagName === 'LI') {
-                selected.textContent = e.target.textContent;
-                selected.dataset.value = e.target.dataset.value;
-                hiddenInput.value = e.target.dataset.value;
-                listContainer.style.display = 'none';
-                if (onSelect) onSelect(e.target.dataset.value, e.target.textContent);
-            }
-        });
-
-        // Close on outside click
-        document.addEventListener('click', e => {
-            if (!dropdown.contains(e.target)) {
-                listContainer.style.display = 'none';
-            }
-        });
-    }
-
-// Initialize Category dropdown
-    initSellPageDetailsDropdown(
-        'sell-page-details-category-dropdown',
-        'sell-page-details-category-input',
-        (categoryId) => {
-            const subDropdown = document.getElementById('sell-page-details-subcategory-dropdown');
-            const subList = subDropdown.querySelector('ul');
-            const subSelected = subDropdown.querySelector('.sell-page-details-dropdown-selected');
-            const subHiddenInput = document.getElementById('sell-page-details-subcategory-input');
-
-            // Reset subcategory state
-            subList.innerHTML = '';
-            subSelected.textContent = 'Select Subcategory';
-            subHiddenInput.value = '';
-            subDropdown.style.display = 'none';
-
-            if (!categoryId) return;
-
-            // Fetch subcategories from PHP
-            fetch(`./includes/get_subcategories.php?category_id=${categoryId}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.length > 0) {
-                        data.forEach(sub => {
-                            const li = document.createElement('li');
-                            li.dataset.value = sub.subcategory_id;
-                            li.textContent = sub.subcategory_name;
-                            subList.appendChild(li);
-                        });
-                        subDropdown.style.display = 'block';
-
-                        // Only init once — avoid stacking event listeners
-                        if (!subDropdown.dataset.initialized) {
-                            initSellPageDetailsDropdown(
-                                'sell-page-details-subcategory-dropdown',
-                                'sell-page-details-subcategory-input'
-                            );
-                            subDropdown.dataset.initialized = 'true';
-                        }
-                    }
-                })
-                .catch(err => console.error(err));
-        }
-    );
-
+            item.appendChild(img);
+            preview.appendChild(item);
+        };
+        reader.readAsDataURL(file);
+    });
+});
 </script>
-
-
-
 
 
 </body>

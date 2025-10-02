@@ -1,11 +1,11 @@
-<a href="/product.php?id=<?= urlencode($product['listings_id']) ?>" target="_blank" class="listing-card-link">
+<a href="/product.php?id=<?= urlencode($listing['listings_id']) ?>" target="_blank" class="listing-card-link">
     <div class="listing-card" data-lazy-card>
         <div class="product-image slideshow-container">
             <div class="slides-track">
-                <?php foreach ($product['images'] as $img): ?>
+                <?php foreach ($listing['images'] as $img): ?>
                     <div class="slide">
                         <img src="/public/assets/images/products/<?= htmlspecialchars($img['url']) ?>" 
-                            alt="<?= htmlspecialchars($product['name']) ?>">
+                            alt="<?= htmlspecialchars($listing['name']) ?>">
                     </div>
                 <?php endforeach; ?>
             </div>
@@ -17,39 +17,39 @@
         <div class="listing-details">
             <div class="listing-first-row">
                 <span class="listing-title">
-                    <?= htmlspecialchars($product['name']); ?>
+                    <?= htmlspecialchars($listing['name']); ?>
                 </span>
             </div>
             <div class="listing-price-wrapper">
 
-                <?php if (!empty($product['discount']) && $product['discount'] > 0): ?>
+                <?php if (!empty($listing['discount']) && $listing['discount'] > 0): ?>
                     <?php
-                        $discountedPrice = $product['price'] - ($product['price'] * ($product['discount'] / 100));
+                        $discountedPrice = $listing['price'] - ($listing['price'] * ($listing['discount'] / 100));
                     ?>
                     <span class="listing-price-new">
                         <?= "PHP " . htmlspecialchars(number_format($discountedPrice, 2)); ?>
                     </span>
                     <div>
                         <span class="listing-price-old">
-                            <?= "PHP " . htmlspecialchars(number_format($product['price'], 2)); ?>
+                            <?= "PHP " . htmlspecialchars(number_format($listing['price'], 2)); ?>
                         </span>
                         <span class="listing-price-discount">
-                            <?= "-" . htmlspecialchars($product['discount']) . "%"; ?>
+                            <?= "-" . htmlspecialchars($listing['discount']) . "%"; ?>
                         </span>
                     </div>
                 <?php else: ?>
                     <span class="listing-price-new">
-                        <?= "PHP " . htmlspecialchars(number_format($product['price'], 2)); ?>
+                        <?= "PHP " . htmlspecialchars(number_format($listing['price'], 2)); ?>
                     </span>
                 <?php endif; ?>
 
             </div>
             <div class="other-details">
-                <span class="listing-condition"><?= html_entity_decode($product['condition']) ?></span>
+                <span class="listing-condition"><?= html_entity_decode($listing['item_condition']) ?></span>
                 <span class="listing-time">
                     <?php
                     date_default_timezone_set('Asia/Manila');
-                    $postedTime = new DateTime($product['date_created']);
+                    $postedTime = new DateTime($listing['date_created']);
                     $currentTime = new DateTime();
                     $interval = $postedTime->diff($currentTime);
 

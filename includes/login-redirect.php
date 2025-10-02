@@ -9,16 +9,19 @@ if ($_SERVER['REQUEST_METHOD'] === "POST") {
     $password = trim($_POST['password'] ?? '');
     $redirect = $_POST['redirect'] ?? '/';
 
-    // Fetch user by email
     $stmt = $pdo->prepare("SELECT * FROM user_account WHERE email = ?");
     $stmt->execute([$email]);
     $user_account = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    // Check if user exists and password matches
     if ($user_account && $user_account['password']) {
+        $user_id_stmt = $pdo->prepare("SELECT user_id FROM user WHERE user_account_id = ?");
+        $user_id_stmt->execute([$user_account['user_account_id']]);
+        $user_details = $user_id_stmt->fetch(PDO::FETCH_ASSOC);
+
         $_SESSION['isLoggedIn'] = true;
-        $_SESSION['user_id']    = $user_account['user_account_id'];
-        $_SESSION['email']      = $email;
+        $_SESSION['user_account_id'] = $user_account['user_account_id'];
+        $_SESSION['user_id'] = $user_details['user_id'];
+        $_SESSION['email'] = $email;
         unset($_SESSION['error_message']);
 
         echo json_encode([

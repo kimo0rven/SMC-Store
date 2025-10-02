@@ -2,18 +2,21 @@
 .dropdown {
     position: relative;
     display: inline-block;
+    color: #121212;
+    font-weight: 400;
+
 }
 
 .dropbtn {
     background: none;
     border: none;
-    color: #ffffffff;
-    font: inherit;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 8px;
     padding: 8px 12px;
+    color: #121212;
+    font-weight: 400;
 }
 
 .dropbtn:hover {
@@ -24,10 +27,11 @@
 .arrow {
     width: 16px;
     height: 16px;
-    background-image: url('/public/assets/images/icons/arrow_down.svg');
+    background-image: url('/public/assets/images/icons/arrow_down_icon.png');
     background-size: contain;
     background-repeat: no-repeat;
     transition: transform 0.3s ease;
+    fill: #121212;
 }
 
 .dropdown-content {
@@ -59,7 +63,7 @@
 }
 
 .dropdown-content a:hover {
-    background-color: #ddd;
+    background-color: #dadada;
     border-radius: .5rem;
 
 }
@@ -88,11 +92,11 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
     </button>
 
     <div class="dropdown-content" role="menu">
-        <a href="#"><img src="/public/assets/images/icons/profile_icon.png" alt=""> Profile</a>
-        <a href="#"><img src="/public/assets/images/icons/settings_icon.png" alt=""> Settings</a>
+        <a href="/user.php?id=<?php echo($_SESSION['user_id']) ?>"><img src="/public/assets/images/icons/profile_icon.png" alt=""> Profile</a>
+        <a href="/chat.php"><img src="/public/assets/images/icons/chat_buble_icon.png" alt=""> Chats</a>
         <a href="#"><img src="/public/assets/images/icons/notifications_icon.png" alt=""> Notifications</a>
         <a href=""><img src="/public/assets/images/icons/bookmark_icon.png" alt=""> Likes</a>
-        <a href=""><img src="/public/assets/images/icons/listings_icon.png" alt=""> Manage Listing</a>
+        <a href=""><img src="/public/assets/images/icons/listings_icon.png" alt=""> Listing</a>
         <a href="/logout.php"><img src="/public/assets/images/icons/logout_icon.png" alt=""> Log out</a>
     </div>
 </div>

@@ -9,7 +9,9 @@ $isLoggedIn = !empty($_SESSION['isLoggedIn']) && $_SESSION['isLoggedIn'] === tru
         <a href="/"><img src="/public/assets/images/temp_logo.png" style="height:auto; width:64px;" alt="Logo"></a>
     </div>
     <div class="search">
-        <input type="search" placeholder="Search..">
+        <form action="/" method="get">
+            <input type="search" name="search_query" placeholder="Search products...">
+        </form>
     </div>
     <nav class="nav">
         <?php if($isLoggedIn) {

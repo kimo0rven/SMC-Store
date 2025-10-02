@@ -50,7 +50,6 @@ foreach ($rows as $row) {
     }
 }
 
-// Fetch seller reviews
 $reviewQuery = "
     SELECT 
         r.*, 
@@ -69,7 +68,6 @@ $stmt2 = $pdo->prepare($reviewQuery);
 $stmt2->execute(['seller_id' => $product['listing_owner_id']]);
 $reviews = $stmt2->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
-// print_r($reviews);
 $averagePercentage = 0;
 $ratingLabel = 'No reviews yet';
 
@@ -116,11 +114,11 @@ $price = number_format($price, 2);
 
 $stmt = $pdo->prepare("
     SELECT l.*, 
-           CASE WHEN b.bookmark_id IS NOT NULL THEN 1 ELSE 0 END AS is_bookmarked
+        CASE WHEN b.bookmark_id IS NOT NULL THEN 1 ELSE 0 END AS is_bookmarked
     FROM listings l
     LEFT JOIN bookmark b 
         ON b.listings_id = l.listings_id 
-       AND b.user_id = :current_user_id
+        AND b.user_id = :current_user_id
     WHERE l.listings_id = :listings_id
 ");
 $stmt->execute([
@@ -131,6 +129,88 @@ $product1 = $stmt->fetch(PDO::FETCH_ASSOC);
 
 $isBookmarked = !empty($product1['is_bookmarked']);
 
+try {
+    $sql = "INSERT INTO recently_viewed (user_id, listings_id) VALUES (:user_id, :listings_id)";
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindParam(':user_id', $_SESSION['user_id'], PDO::PARAM_INT);
+    $stmt->bindParam(':listings_id', $product1['listings_id'], PDO::PARAM_INT);
+    $stmt->execute();
+
+} catch (PDOException $e) {
+    error_log("Database error: " . $e->getMessage());
+}
+
+function fetchListingsWithImages(PDO $pdo, string $sql, array $params = []): array {
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $listings = [];
+    foreach ($rows as $row) {
+        $id = $row['listings_id'];
+        if (!isset($listings[$id])) {
+            $listings[$id] = [
+                'listings_id'    => $row['listings_id'],
+                'name'           => $row['name'],
+                'brand'          => $row['brand'],
+                'price'          => $row['price'],
+                'description'    => $row['description'],
+                'item_condition' => $row['item_condition'] ?? null,
+                'date_created'   => $row['date_created'] ?? null,
+                'images'         => []
+            ];
+        }
+        if (!empty($row['image_url'])) {
+            $listings[$id]['images'][] = [
+                'url'        => $row['image_url'],
+                'is_primary' => $row['is_primary']
+            ];
+        }
+    }
+    return $listings;
+}
+
+$recentlyVieweds = [];
+$stmt = $pdo->prepare("
+    SELECT listings_id 
+    FROM recently_viewed 
+    WHERE user_id = :user_id 
+    ORDER BY viewed_at DESC
+");
+$stmt->execute([':user_id' => $_SESSION['user_id']]);
+$recentIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+$recentlyVieweds = [];
+if ($recentIds) {
+    $ph = implode(',', array_fill(0, count($recentIds), '?'));
+    $recentSql = "
+        SELECT l.listings_id, l.name, l.brand, l.price, l.description, l.item_condition, li.image_url, li.is_primary, li.date_created
+        FROM listings l
+        LEFT JOIN listing_images li ON l.listings_id = li.listings_id
+        WHERE l.listings_id IN ($ph)
+        ORDER BY FIELD(l.listings_id, $ph)
+    ";
+    $recentlyVieweds = fetchListingsWithImages($pdo, $recentSql, array_merge($recentIds, $recentIds));
+}
+
+$similarSql = "
+    SELECT l.listings_id, l.name, l.brand, l.price, l.description, l.item_condition, l.date_created, li.image_url, li.is_primary
+    FROM listings l
+    LEFT JOIN listing_images li ON l.listings_id = li.listings_id
+    WHERE l.subcategory_id IN (
+        SELECT subcategory_id 
+        FROM subcategories 
+        WHERE category_id = (
+            SELECT category_id FROM subcategories WHERE subcategory_id = :sub_id
+        )
+    )
+    AND l.listings_id != :current_id
+    ORDER BY l.date_created DESC
+";
+$similarListings = fetchListingsWithImages($pdo, $similarSql, [
+    'sub_id'     => $product['subcategory_id'],
+    'current_id' => $productId
+]);
 ?>
 
 
@@ -213,20 +293,22 @@ $isBookmarked = !empty($product1['is_bookmarked']);
             <div class="product-view-name">
                 <h1><?= htmlspecialchars($product['name']) ?></h1>
                 <div class="product-view-other-actions">
-                    <span id='share-btn' ><img src="./public/assets/images/icons/share_url_icon.png" alt=""></span>
-                    <span 
-                        id="product-view-bookmark-btn"
-                        data-listings-id="<?= (int)$product['listings_id'] ?>"
-                        data-user-id="<?= isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0 ?>"
-                        data-bookmarked="<?= $isBookmarked ? 1 : 0 ?>"
-                    >
-                        <img src="/public/assets/images/icons/<?= $isBookmarked ? 'bookmark_added_icon.png' : 'bookmark_add_icon.png' ?>" alt="Bookmark">
-                    </span>
+                    <span id='share-btn'><img src="./public/assets/images/icons/share_icon.png" alt="Share"></span>
+                    <?php if (isset($_SESSION['user_id']) && $_SESSION['user_id'] != $product['listing_owner_id']) { ?>
+                        <span
+                            id="product-view-bookmark-btn"
+                            data-listings-id="<?= (int)$product['listings_id'] ?>"
+                            data-user-id="<?= (int)$_SESSION['user_id'] ?>"
+                            data-bookmarked="<?= $isBookmarked ? 1 : 0 ?>">
+                            <img src="/public/assets/images/icons/<?= $isBookmarked ? 'bookmark_added_icon.png' : 'bookmark_icon.png' ?>" alt="Bookmark">
+                        </span>
+                        <?php
+                    }
+                    ?>
                 </div>
             </div>
 
             <div class="product-view-price">
-
                 <?php if (!empty($product['discount']) && $product['discount'] > 0): ?>
                     <?php
                         
@@ -254,27 +336,42 @@ $isBookmarked = !empty($product1['is_bookmarked']);
                 <?php endif; ?>
             </div>
             <div class="product-view-condition">
-                <span>Condition: </span><span class="product-view-condition-display"><?= htmlspecialchars($product['condition']) ?></span>
+                <span>Condition: </span><span class="product-view-condition-display"><?= htmlspecialchars($product['item_condition']) ?></span>
             </div>
             
             <div class="product-view-action-buttons-container">
-                <button>Chat</button>
-
-                <div class="price-offer">
-                    <span class="price">PHP</span>
-                    <input type="number" id="price-offer-field" name="" value="<?= htmlspecialchars(number_format($product['price'], 2, '.', '')) ?>">
-                    
-                    <button class="make-offer-btn">Make Offer</button>
-                </div>
-
+                <?php 
+                if (isset($_SESSION['user_id']) && $_SESSION['user_id'] != $product['listing_owner_id']) {
+                    ?>
+                    <button>Chat</button>
+                    <div class="price-offer">
+                        <span class="price">PHP</span>
+                        <input type="number" id="price-offer-field" name="" value="<?= htmlspecialchars(number_format($product['price'], 2, '.', '')) ?>">
+                        <button class="make-offer-btn">Make Offer</button>
+                    </div>
+                    <?php }?>
             </div>
+
         </div>
     </div>
-
+    <?php if (isset($_SESSION['user_id']) && $_SESSION['user_id'] != $product['listing_owner_id']) {
+                    ?>
     <div class="product-view-recently-viewed">
         <p class="product-view-recently-viewed-header">Recently Viewed</p>
         <div class="products-display">
-            
+            <?php foreach ($recentlyVieweds as $listing): ?>
+                <?php include './public/components/listing_card.php'  ?>
+            <?php endforeach; ?>
+        </div>
+    </div>
+    <?php }?>
+
+    <div class="product-view-recently-viewed">
+        <p class="product-view-recently-viewed-header">Similar Listings</p>
+        <div class="products-display">
+            <?php foreach ($similarListings as $listing): ?>
+                <?php include './public/components/listing_card.php'  ?>
+            <?php endforeach; ?>
         </div>
     </div>
     
@@ -364,7 +461,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.key === 'Escape') closeLightbox();
         }
     });
-});
+    });
 
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -414,11 +511,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (bookmarkBtn) {
             let isBookmarked = parseInt(bookmarkBtn.dataset.bookmarked, 10) === 1;
             const listingsId = parseInt(bookmarkBtn.dataset.listingsId, 10);
-            const userId     = parseInt(bookmarkBtn.dataset.userId, 10);
+            const userId = parseInt(bookmarkBtn.dataset.userId, 10);
 
             bookmarkBtn.addEventListener('click', () => {
                 requireLogin(() => {
-        
+
                     const url = isBookmarked ? '/includes/unbookmark.php' : '/includes/bookmark.php';
                     const body = `listings_id=${encodeURIComponent(listingsId)}&user_id=${encodeURIComponent(userId)}`;
 
@@ -427,23 +524,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                         body
                     })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            isBookmarked = !isBookmarked;
-                            bookmarkBtn.innerHTML = `<img src="/public/assets/images/icons/${isBookmarked ? 'bookmark_added_icon.png' : 'bookmark_add_icon.png'}" alt="Bookmark">`;
-                        } else {
-                            alert(data.message || 'Error updating bookmark');
-                        }
-                    })
-                    .catch(err => console.error(err));
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                isBookmarked = !isBookmarked;
+                                bookmarkBtn.classList.toggle('clicked', isBookmarked);
+
+                                bookmarkBtn.innerHTML = `<img src="/public/assets/images/icons/${isBookmarked ? 'bookmark_added_icon.png' : 'bookmark_icon.png'}" alt="Bookmark">`;
+                            } 
+                        })
+                        .catch(err => console.error(err));
                 });
             });
         }
     });
 </script>
-
-
 
 </body>
 </html>

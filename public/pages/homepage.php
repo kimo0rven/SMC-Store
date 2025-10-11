@@ -90,45 +90,28 @@ $categories = $stmt -> fetchAll(PDO::FETCH_ASSOC);
 <body>
 <header>
     <?php include './public/components/header.php' ?>
-    <!-- <div class="category-bar">
-        <div class="category-list">
-            <div><a href="">Likes</a></div>
-            <div><a href="">Fashion</a></div>
-            <div><a href="">Electronics</a></div>
-            <div class="mobile-hidden"><a href="">Home & Garden</a></div>
-            <div class="mobile-hidden"><a href="">Beauty</a></div>
-            <div class="mobile-hidden"><a href="">Food</a></div>
-            <div class="mobile-hidden"><a href="">Media</a></div>
-            <div class="mobile-hidden"><a href="">Toys & Hobbies</a></div>
-            <div class="categ-dropdown">
-                <div onclick="categ_myFunction()" class="categ-dropbtn">All Categories</div>
-                <div id="categ-myDropdown" class="categ-dropdown-content">
-                    <a href="#">Link 1</a>
-                    <a href="#">Link 2</a>
-                    <a href="#">Link 3</a>
-                </div>
-            </div>
-        </div>
-    </div> -->
 </header>
 
-<main style="flex-direction:column">
-    <div class="products-categories">
-        <?php foreach ($categories as $category): ?>
-        <div class="products-category">
-            <img src="/public/assets/images/product1.jpg" alt="">
-            <p><?= htmlspecialchars($category['category_name']) ?></p>
-        </div>
-        <?php endforeach; ?>
-    </div>
-    
-    <div class="products-wrapper">
-        <div class="products-display">
-            <?php foreach ($products as $listing): ?>
-                <?php include './public/components/listing_card.php'  ?>
+<main style="flex-direction:column; justify-content: center; align-items:center">
+        <div class="products-categories">
+            <?php foreach ($categories as $category): ?>
+                <a href="/search.php?category=<?= htmlspecialchars($category['category_id']) ?>">
+                    <div class="products-category">
+                        <img src="/public/assets/images/product1.jpg" 
+                            alt="<?= htmlspecialchars($category['category_name']) ?>">
+                        <p><?= htmlspecialchars($category['category_name']) ?></p>
+                    </div>
+                </a>
             <?php endforeach; ?>
         </div>
-    </div>
+
+        <div class="products-wrapper">
+            <div class="products-display">
+                <?php foreach ($products as $listing): ?>
+                    <?php include './public/components/listing_card.php'  ?>
+                <?php endforeach; ?>
+            </div>
+        </div>
 </main>
 
 <footer>

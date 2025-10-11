@@ -1,6 +1,16 @@
 <?php 
 include 'includes/config.php';
+include './includes/db_connection.php';
 
+$topStmt = $pdo->query("
+    SELECT keyword, COUNT(*) AS count
+    FROM search_logs
+    WHERE created_at >= NOW() - INTERVAL 7 DAY
+    GROUP BY keyword
+    ORDER BY count DESC
+    LIMIT 5
+");
+$topSearches = $topStmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <footer>
@@ -9,7 +19,15 @@ include 'includes/config.php';
                 <p>Top Searches</p>
             </div>
 
-            <div>zara | iphone | uniqlo | ipad | dress | bag | digicam | lululemon | bag | tote bag | digital camera | lacoste | kindle | carhartt | miu miu | laptop | nike | backpack | longchamp | filipiniana | prada | love bonito | crocs | adidas | balenciaga | dior | jacket | onitsuka | seiko | wallet | boots | vivienne westwood | chanel | iphone 15 | macbook | camera | vintage | stussy | birkenstock | sofa | charles and keith | cardigan | fujifilm | kate spade | watch | iphone 12 | loewe | nintendo switch</div>
+            <div class="top-searches">
+                <?php foreach ($topSearches as $index => $row): ?>
+                    <a href="/search.php?search_query=<?= urlencode($row['keyword']) ?>">
+                        <?= htmlspecialchars($row['keyword']) ?>
+                    </a>
+                    <?php if ($index < count($topSearches) - 1): ?> | <?php endif; ?>
+                <?php endforeach; ?>
+            </div>
+
         </div>
 
         <div class=bottom-footer>

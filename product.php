@@ -213,7 +213,6 @@ $similarListings = fetchListingsWithImages($pdo, $similarSql, [
 ]);
 ?>
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -342,14 +341,27 @@ $similarListings = fetchListingsWithImages($pdo, $similarSql, [
             <div class="product-view-action-buttons-container">
                 <?php 
                 if (isset($_SESSION['user_id']) && $_SESSION['user_id'] != $product['listing_owner_id']) {
-                    ?>
-                    <button>Chat</button>
-                    <div class="price-offer">
-                        <span class="price">PHP</span>
-                        <input type="number" id="price-offer-field" name="" value="<?= htmlspecialchars(number_format($product['price'], 2, '.', '')) ?>">
-                        <button class="make-offer-btn">Make Offer</button>
-                    </div>
-                    <?php }?>
+                    if ($product['listing_status'] === 'sold' || $product['listing_status'] === 'unavailable') {
+                        ?>
+                        <button id="create_chat" disabled style="opacity:0.6; cursor:not-allowed;">Unavailable</button>
+                        <div class="price-offer">
+                            <span class="price">PHP</span>
+                            <input type="number" id="price-offer-field" value="<?= htmlspecialchars(number_format($product['price'], 2, '.', '')) ?>" disabled>
+                            <button id="make_offer" class="make-offer-btn" disabled style="opacity:0.6; cursor:not-allowed;">Unavailable</button>
+                        </div>
+                        <?php
+                    } else {
+                        ?>
+                        <button id="create_chat">Chat</button>
+                        <div class="price-offer">
+                            <span class="price">PHP</span>
+                            <input type="number" id="price-offer-field" value="<?= htmlspecialchars(number_format($product['price'], 2, '.', '')) ?>">
+                            <button id="make_offer" class="make-offer-btn">Make Offer</button>
+                        </div>
+                        <?php
+                    }
+                }
+                ?>
             </div>
 
         </div>
@@ -383,6 +395,20 @@ $similarListings = fetchListingsWithImages($pdo, $similarSql, [
             <li><?= htmlspecialchars($product['name']) ?></li>
         </ul>
     </div>
+
+    <dialog id="unavailable-dialog">
+        <p>The product you are looking for does not exist</p>
+        <form method="dialog" style="display: flex; justify-content:center">
+            <button class="chat-btn" onclick="window.history.back()">Go Back</button>
+        </form>
+    </dialog>
+
+    <?php if ($product['listing_status'] === 'unavailable'): ?>
+    <script>
+        document.getElementById('unavailable-dialog').showModal();
+       document.getElementById('unavailable-dialog').querySelector('p').focus();
+    </script>
+    <?php endif; ?>
 </main>
 
 
@@ -460,7 +486,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.key === 'ArrowRight') showNext();
             if (e.key === 'Escape') closeLightbox();
         }
-    });
+        });
     });
 
 
@@ -537,6 +563,46 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             });
         }
+    });
+
+    const listingId = <?php echo (int)$product1['listings_id']; ?>;
+    console.log(listingId);
+
+    function postToCreateChat(data) {
+    fetch('/includes/create_chat.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(res => res.json())
+    .then(response => {
+        if (response.success) {
+        window.location.href = `/conversation.php?conversation_id=${response.conversation_id}`;
+        } else {
+        alert(response.error || 'Something went wrong. Please try again.');
+        }
+    })
+    .catch(err => {
+        console.error('Request failed:', err);
+        alert('Network error. Please check your connection.');
+    });
+    }
+
+    document.getElementById('create_chat').addEventListener('click', function () {
+    postToCreateChat({ listings_id: listingId });
+    });
+
+    document.getElementById('make_offer').addEventListener('click', function () {
+    const offerField = document.getElementById('price-offer-field');
+    const offer = parseFloat(offerField.value);
+
+    if (!offer || offer <= 0) {
+        alert("Please enter a valid offer amount.");
+        offerField.focus();
+        return;
+    }
+
+    postToCreateChat({ listings_id: listingId, offer_amount: offer });
     });
 </script>
 

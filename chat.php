@@ -26,7 +26,7 @@ $convoQuery = "
     LEFT JOIN conversation_message m ON c.conversation_id = m.conversation_id
     WHERE c.seller_id = :uid OR c.buyer_id = :uid
     GROUP BY c.conversation_id
-    ORDER BY c.created_at DESC
+    ORDER BY c.created_at ASC
 ";
 
 $stmt = $pdo->prepare($convoQuery);

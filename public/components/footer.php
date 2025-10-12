@@ -34,4 +34,5 @@ $topSearches = $topStmt->fetchAll(PDO::FETCH_ASSOC);
             <div><img src="/public/assets/images/temp_logo.png" height="auto" width="32px" alt=""></div>
             <div><?php echo "© ". date("Y") . " " . $title ?></div>
         </div>
+
 </footer>

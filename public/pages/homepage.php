@@ -1,10 +1,12 @@
 <?php 
 session_start();
-include './includes/db_connection.php';
-include 'includes/config.php';
+require_once './includes/db_connection.php';
+require_once 'includes/config.php';
 
 $_SESSION['isLoggedIn'] = $_SESSION['isLoggedIn'] ?? false;
+$title = "Home";
 
+$searchQuery = null;
 $sql = "
     SELECT 
         l.listings_id,

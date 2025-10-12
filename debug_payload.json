@@ -1,0 +1,11 @@
+{
+    "listing_id": "2",
+    "delivery": "ship",
+    "shipping_address_id": "1",
+    "new_street_address": "",
+    "new_barangay": "",
+    "new_city": "Iligan City",
+    "new_province": "Lanao del Norte",
+    "new_type": "home",
+    "payment": "cod"
+}

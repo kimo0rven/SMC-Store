@@ -1671,6 +1671,21 @@ ul.breadcrumb li a:hover {
   text-align: center;
 }
 
+.chat-btn[disabled] {
+  pointer-events: none;
+  cursor: not-allowed;
+  background-color: #dadada;
+  color: #666666;
+  opacity: 0.6;
+}
+
+.chat-btn[disabled]::after {
+  content: " Unavailable";
+  margin-left: 0.5rem;
+  font-weight: bold;
+}
+
+
 .chat-btn:hover {
   cursor: pointer;
 }

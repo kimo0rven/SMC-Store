@@ -26,7 +26,8 @@ $convoQuery = "
         u2.last_name   AS buyer_last_name,
         l.listings_id,
         l.name         AS listing_name,
-        l.price        AS listing_price
+        l.price        AS listing_price,
+        l.listing_status       AS listing_status
     FROM conversation c
     INNER JOIN user u1 ON c.seller_id = u1.user_id
     INNER JOIN user u2 ON c.buyer_id = u2.user_id
@@ -149,7 +150,7 @@ if ($conversation['current_offer_amount'] > 0) {
 <main class="inbox-main">
     <div class="inbox-right-side" style="flex: 1;">
 
-        <div style="display: flex; align-items:center; justify-items:center; gap: 1rem; padding: 0.5rem 0">
+        <div style="display: flex; align-items:center; justify-items:center; gap: 1rem; padding: 0.5rem 0; flex-wrap:wrap">
             <div>
                 <button id="back-to-chat" class="chat-btn">
                     ← Back
@@ -175,9 +176,12 @@ if ($conversation['current_offer_amount'] > 0) {
                     <form action="/order_request.php" method="post" style="display:inline;">
                     <input type="hidden" name="listing_id" value="<?= (int)$conversation['listings_id'] ?>">
                     <input type="hidden" name="conversation_id" value="<?= (int)$conversation['conversation_id'] ?>">
-                    <button type="submit" id="create_order_btn" class="chat-btn">
-                        Request Order
-                    </button>
+                    <?php if ($conversation['listing_status'] == 'active'): ?>
+                    <button type="submit" id="create_order_btn" class="chat-btn">Request Order</button>
+                    <?php else: ?>
+                    <button type="submit" id="create_order_btn" class="chat-btn" disabled>Request Order</button>
+                    <?php endif; ?>
+
                     </form>
 
                 </div>
@@ -189,7 +193,7 @@ if ($conversation['current_offer_amount'] > 0) {
                 Chat with <?= htmlspecialchars($otherName) ?>
             </span>
             <?php if (!empty($conversation['listing_name'])): ?>
-                <span><a href="/listings.php?=<?= htmlspecialchars($conversation['listings_id']) ?>"><?= htmlspecialchars($conversation['listing_name']) ?></a>
+                <span><a href="/product.php?id=<?= htmlspecialchars($conversation['listings_id']) ?>"><?= htmlspecialchars($conversation['listing_name']) ?></a>
                     — PHP <?= htmlspecialchars($conversation['listing_price']) ?>
                 </span>
             <?php endif; ?>
@@ -251,7 +255,7 @@ if ($conversation['current_offer_amount'] > 0) {
 <script src="/public/javascripts/category_dropdown.js"></script>
 <script>
     document.getElementById('back-to-chat').addEventListener('click', () => {
-    window.location.href = '/chat.php';
+    window.location.href = '/messages.php';
     });
 
     const editBtn   = document.getElementById('edit_offer_btn');

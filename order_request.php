@@ -43,12 +43,11 @@ $stmt3 = $pdo->prepare($sql3);
 $stmt3->execute(['user_id' => $_SESSION['user_id']]);
 $shippingAddresses = $stmt3->fetchAll(PDO::FETCH_ASSOC);
 
-
 if (!$listing) {
     die("Listing not found.");
 }
-
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -57,7 +56,7 @@ if (!$listing) {
   <title>Conversation | Michaelite Store</title>
   <link rel="stylesheet" href="/public/css/style.css">
   <link rel="stylesheet" href="/public/css/component.css">
-  <script src="https://www.paypal.com/sdk/js?client-id=AW4wJ5P1mLbEAB2xa3ROXCqpqcyk7w3eaYr5AEolesAP25Nt7LJ22tajIMSI_iLa82Wgl_McPhWj3S5x&currency=PHP&components=buttons"></script>
+  <script src="https://www.paypal.com/sdk/js?client-id=AW4wJ5P1mLbEAB2xa3ROXCqpqcyk7w3eaYr5AEolesAP25Nt7LJ22tajIMSI_iLa82Wgl_McPhWj3S5x&currency=PHP&components=buttons&locale=en_PH"></script>
   <style>
     body {display: flex; justify-content: space-between; align-items: center; flex-direction: column; gap: 2rem}
   </style>
@@ -84,7 +83,7 @@ if (!$listing) {
         <label for="delivery">Delivery Method</label>
         <select name="delivery" id="delivery" required>
           <option value="">-- Select Delivery Method --</option>
-          <option value="ship">Ship to Address</option>
+          <option selected value="ship">Ship to Address</option>
           <option value="rider">Local Rider Drop</option>
           <option value="meetup">Meet Up</option>
         </select>
@@ -96,7 +95,7 @@ if (!$listing) {
           <select name="shipping_address_id" id="shipping_address_id" required>
             <option value="">-- Select Address --</option>
             <?php foreach ($shippingAddresses as $addr): ?>
-              <option value="<?= $addr['shipping_address_id'] ?>"
+              <option selected value="<?= $addr['shipping_address_id'] ?>"
                 <?= $addr['is_default'] ? 'selected' : '' ?>>
                 <?= htmlspecialchars($addr['street_address'] . ', ' . $addr['barangay'] . ', ' . $addr['city'] . ', ' . $addr['province']) ?>
                 (<?= htmlspecialchars($addr['type']) ?>)
@@ -148,12 +147,13 @@ if (!$listing) {
           <option value="pick up">Pick Up</option>
         </select>
       </div>
+
       <div class="order-form-section">
         <label for="payment">Payment Method</label>
         <select name="payment" id="payment" required>
           <option value="">-- Select Payment --</option>
           <option selected="selected" value="cod">Cash on Delivery</option>
-          <option value="card">Paypal</option>
+          <option value="Paypal">Paypal</option>
         </select>
       </div>
 
@@ -177,7 +177,7 @@ if (!$listing) {
       
     </form>
 
-    <div id="paypal-button-container" style="display:none;"></div>
+    <div id="paypal-button-container"></div>
   </div>
   
 </body>
@@ -188,19 +188,23 @@ if (!$listing) {
 <script>
   let total = 0;
 
-  document.getElementById('shipping_address_id').addEventListener('change', function() {
-  const newForm = document.getElementById('new-address-form');
-  if (this.value === 'new') {
-    newForm.style.display = 'block';
-  } else {
-    newForm.style.display = 'none';
-  }
-  });
-
   const deliverySelect = document.getElementById('delivery');
   const shippingSection = document.getElementById('shipping-section');
   const shippingDropdown = document.getElementById('shipping_address_id');
   const newAddressForm = document.getElementById('new-address-form');
+  const subtotalEl = document.getElementById('shipping-price-display');
+  const totalEl = document.getElementById('order-total-display');
+  const placeOrderbtn = document.getElementById('place-order-id');
+  const paymentSelect = document.getElementById('payment');
+  const paypalContainer = document.getElementById('paypal-button-container');
+
+  const subtotal = parseFloat("<?= number_format($conversation['current_offer_amount'], 2, '.', '') ?>");
+  const listingId = "<?= $listing['listings_id'] ?>";
+
+  shippingDropdown.addEventListener('change', function () {
+    newAddressForm.style.display = this.value === 'new' ? 'block' : 'none';
+    updatePayPalButtonState();
+  });
 
   function updateShippingVisibility() {
     const method = deliverySelect.value;
@@ -212,88 +216,164 @@ if (!$listing) {
       shippingDropdown.value = '';
       newAddressForm.style.display = 'none';
     }
+
+    updateShippingAndTotal();
+    updatePayPalButtonState();
   }
 
   deliverySelect.addEventListener('change', updateShippingVisibility);
-  shippingDropdown.addEventListener('change', function () {
-    newAddressForm.style.display = this.value === 'new' ? 'block' : 'none';
-  });
-
-  updateShippingVisibility();
-
-  const subtotalEl = document.getElementById('shipping-price-display');
-  const shippingEl = document.getElementById('shipping');
-  const totalEl = document.getElementById('order-total-display');
-
-  const subtotal = parseFloat("<?= number_format($conversation['current_offer_amount'], 2, '.', '') ?>");
 
   function updateShippingAndTotal() {
     const method = deliverySelect.value;
-    const shipping = method === 'meetup' ? 0 : 150;
+    const shipping = (method === 'meetup' || method === '') ? 0 : 150;
     const total = subtotal + shipping;
-    console.log(total)
 
     subtotalEl.textContent = `PHP ${shipping.toFixed(2)}`;
     totalEl.textContent = `PHP ${total.toFixed(2)}`;
   }
 
   deliverySelect.addEventListener('change', updateShippingAndTotal);
-
   updateShippingAndTotal();
 
-  const paymentSelect = document.getElementById('payment');
-  const paypalContainer = document.getElementById('paypal-button-container');
-  const placeOrderbtn = document.getElementById('place-order-id');
+  function isFormValid() {
+    const method = deliverySelect.value;
+    const payment = paymentSelect.value;
+    const shippingRequired = method !== 'meetup';
+
+    const shippingValid = !shippingRequired || shippingDropdown.value !== '';
+    const newAddressVisible = newAddressForm.style.display === 'block';
+    const newAddressFilled = !newAddressVisible || (
+      document.getElementById('new-address-line')?.value.trim() !== '' &&
+      document.getElementById('new-city')?.value.trim() !== '' &&
+      document.getElementById('new-postal')?.value.trim() !== ''
+    );
+
+    return payment === 'Paypal' && shippingValid && newAddressFilled;
+  }
+
+  function updatePayPalButtonState() {
+    paypalContainer.style.display = isFormValid() ? 'block' : 'none';
+  }
 
   paymentSelect.addEventListener('change', function () {
-    if (this.value === 'card') {
-      paypalContainer.style.display = 'block';
+    if (this.value === 'Paypal') {
+
       placeOrderbtn.style.display = 'none';
+      paypalContainer.innerHTML = '';
+
+      paypal.Buttons({
+        style: {
+          color: 'black'
+        },
+        createOrder: function () {
+          const method = deliverySelect.value;
+          const shipping = (method === 'meetup' || method === '') ? 0 : 150;
+          const calculatedTotal = subtotal + shipping;
+          const addressId = shippingDropdown;
+          function saveNewAddress() {
+            const isNew = document.getElementById('shipping_address_id').value === 'new';
+            if (!isNew) return;
+
+            const addressData = {
+              street: document.getElementById('new_street_address').value.trim(),
+              barangay: document.getElementById('new_barangay').value.trim(),
+              city: document.getElementById('new_city').value.trim(),
+              province: document.getElementById('new_province').value.trim(),
+              type: document.getElementById('new_type').value,
+              user_id: <?= $_SESSION['user_id'] ?>
+            };
+
+            fetch('/includes/save_new_address.php', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(addressData)
+            })
+            .then(res => res.json())
+            .then(data => {
+              if (data.status === 'success') {
+                  const newAddressId = data.address_id;
+                  addressId = newAddressId;
+              } else {
+                console.error('Address save failed:', data.message);
+              }
+            });
+          }
+
+          return fetch("/includes/create_paypal_order.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              listing_id: listingId,
+              amount: calculatedTotal.toFixed(2),
+              currency: "PHP",
+              shipping_preference: "NO_SHIPPING",
+              locale: "en-PH",
+              shippingAddressId: addressId,
+              listingName: "<?= htmlspecialchars($listing['name']) ?>"
+            })
+          })
+            .then(res => res.json())
+            .then(data => {
+              const orderId = data.orderID;
+              if (!orderId) throw new Error("No order ID returned");
+              return orderId;
+            });
+        },
+
+        onApprove: function (data, actions) {
+          return fetch("/includes/capture_paypal_order.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ orderID: data.orderID })
+          })
+          .then(res => res.json())
+          .then(response => {
+            console.log("Capture response:", response);
+            const listingId = <?= json_encode($listing['listings_id']) ?>;
+            const delivery = document.getElementById('delivery').value;
+            const addressId = document.getElementById('shipping_address_id').value;
+            const paymentMethod = 'PayPal';
+            const paypalOrderId = response.details.id;
+
+            return fetch("/place_order.php", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                listing_id: listingId,
+                delivery: delivery,
+                shipping_address_id: addressId,
+                payment_method: paymentMethod,
+                paypal_order_id: paypalOrderId,
+                payment: "Paypal"
+              })
+            });
+          })
+          .then(res => res.json())
+          .then(orderResponse => {
+            if (orderResponse.status === 'success' && orderResponse.order_id) {
+              window.location.href = `/order_success.php?order_id=${orderResponse.order_id}`;
+            } else {
+              alert("Order creation failed. Please try again.");
+            }
+          });
+        }
+      }).render("#paypal-button-container");
+
     } else {
       paypalContainer.style.display = 'none';
       placeOrderbtn.style.display = 'block';
     }
+
+    updatePayPalButtonState();
   });
 
-  paypal.Buttons({
-    style: {
-    layout: 'vertical',
-    color:  'black',
-    shape:  'rect',
-    label:  'checkout',
-  },
-      createOrder: function(data, actions) {
-      const method = deliverySelect.value;
-      const shipping = method === 'meetup' ? 0 : 150;
-      const calculatedTotal = subtotal + shipping;
+  ['new-address-line', 'new-city', 'new-postal'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', updatePayPalButtonState);
+  });
 
-      return actions.order.create({
-        purchase_units: [{
-          reference_id: "<?= $listing['listings_id'] ?>",
-          amount: {
-            currency_code: "PHP",
-            value: calculatedTotal.toFixed(2)
-          }
-        }]
-      });
-    },
-      onApprove: function(data, actions) {
-        return actions.order.capture().then(function(details) {
-          fetch("place_order.php", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              orderID: data.orderID,
-              listing_id: "<?= $listing['listings_id'] ?>",
-              shipping_address_id: document.getElementById('shipping_address_id').value,
-              payment: "paypal"
-            })
-          }).then(res => res.json())
-            .then(response => {
-              window.location.href = "order_success.php?order_id=" + response.order_id;
-            });
-        });
-      }
-    }).render('#paypal-button-container');
+  updatePayPalButtonState();
 </script>
+
+
 </html>

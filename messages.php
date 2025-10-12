@@ -6,6 +6,11 @@ if (empty($_SESSION['isLoggedIn']) || $_SESSION['isLoggedIn'] !== true) {
     exit();
 }
 
+if (!isset($_SESSION['user_id'])) {
+    header("Location: index.php");
+    exit();
+}
+
 require './includes/db_connection.php';
 
 $convoQuery = "
@@ -60,31 +65,33 @@ $conversations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         <div class="inbox-right-side">
             <div class="inbox-header">Inbox</div>
-            <?php foreach($conversations as $conv): ?>
-                <?php
-                    if ($_SESSION['user_id'] == $conv['seller_id']) {
-                        $otherName = $conv['buyer_first_name'] . ' ' . $conv['buyer_last_name'];
-                    } else {
-                        $otherName = $conv['seller_first_name'] . ' ' . $conv['seller_last_name'];
-                    }
-                ?>
-                <a href="conversation.php?conversation_id=<?= $conv['conversation_id'] ?>">
-                    <div class="inbox-message-display <?= ($conv['unread_count'] > 0) ? 'unread' : '' ?>">
-                        <div>
-                            <img height="45" width="45" src="/public/assets/images/avatars/1.jpg" alt="">
+            <?php if (!empty($conversations)): ?>
+                <?php foreach($conversations as $conv): ?>
+                    <?php
+                        if ($_SESSION['user_id'] == $conv['seller_id']) {
+                            $otherName = $conv['buyer_first_name'] . ' ' . $conv['buyer_last_name'];
+                        } else {
+                            $otherName = $conv['seller_first_name'] . ' ' . $conv['seller_last_name'];
+                        }
+                    ?>
+                    <a href="conversation.php?conversation_id=<?= $conv['conversation_id'] ?>">
+                        <div class="inbox-message-display <?= ($conv['unread_count'] > 0) ? 'unread' : '' ?>">
+                            <div>
+                                <img height="45" width="45" src="/public/assets/images/avatars/1.jpg" alt="">
+                            </div>
+                            <div>
+                                <?= htmlspecialchars($otherName) ?><br>
+                                <small><?= htmlspecialchars($conv['listing_name']) ?> - $<?= $conv['listing_price'] ?></small>
+                                <?php if ($conv['unread_count'] > 0): ?>
+                                    <span class="badge"><?= $conv['unread_count'] ?></span>
+                                <?php endif; ?>
+                            </div>
                         </div>
-                        <div>
-                            <?= htmlspecialchars($otherName) ?><br>
-                            <small><?= htmlspecialchars($conv['listing_name']) ?> - $<?= $conv['listing_price'] ?></small>
-                            <?php if ($conv['unread_count'] > 0): ?>
-                                <span class="badge"><?= $conv['unread_count'] ?></span>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </a>
-
-            <?php endforeach ?>
-
+                    </a>
+                <?php endforeach ?>
+            <?php else: ?>
+                <p>No conversations found.</p>
+            <?php endif; ?>
         </div>
     </section>
 </main>

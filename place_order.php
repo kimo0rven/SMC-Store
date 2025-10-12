@@ -1,95 +1,97 @@
 <?php
 session_start();
-require __DIR__ . '/includes/db_connection.php';
+require_once './includes/db_connection.php'; // your PDO connection
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-if (empty($_SESSION['isLoggedIn']) || $_SESSION['isLoggedIn'] !== true) {
-    header("Location: index.php");
-    exit();
+// Accept both form and JSON input
+$input = $_SERVER['CONTENT_TYPE'] === 'application/json'
+  ? json_decode(file_get_contents("php://input"), true)
+  : $_POST;
+
+// Extract data
+$userId = $_SESSION['user_id'] ?? null;
+$listingId = $input['listing_id'] ?? null;
+$delivery = $input['delivery'] ?? null;
+$addressId = $input['shipping_address_id'] ?? null;
+$paymentMethod = strtolower($input['payment_method'] ?? 'cod');
+$paypalOrderId = $input['paypal_order_id'] ?? null;
+
+// Basic validation
+if (!$userId || !$listingId || !$delivery || ($delivery !== 'meetup' && !$addressId)) {
+  http_response_code(400);
+  echo json_encode(['error' => 'Missing required fields']);
+  exit;
 }
 
-$contentType = $_SERVER["CONTENT_TYPE"] ?? '';
-$isJson = strpos($contentType, 'application/json') !== false;
+// Determine shipping method label
+$shippingMethod = match ($delivery) {
+  'ship' => 'Ship to Address',
+  'rider' => 'Local Rider Drop',
+  'meetup' => 'Meet Up',
+  default => 'Unknown'
+};
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    die("Invalid request method.");
-}
+// Determine shipping cost
+$shippingCost = ($delivery === 'meetup') ? 0 : 150;
 
-if ($isJson) {
-    $input = json_decode(file_get_contents("php://input"), true);
-} else {
-    $input = $_POST;
-}
+// Get listing price from conversation
+$stmt = $pdo->prepare("SELECT current_offer_amount FROM conversation WHERE listings_id = ? AND buyer_id = ?");
+$stmt->execute([$listingId, $userId]);
+$conversation = $stmt->fetch(PDO::FETCH_ASSOC);
+$subtotal = $conversation['current_offer_amount'] ?? 0;
+$totalAmount = $subtotal + $shippingCost;
 
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    die("User not authenticated.");
-}
+// Insert order
+$stmt = $pdo->prepare("
+  INSERT INTO orders (
+    user_id,
+    listings_id,
+    order_date,
+    total_amount,
+    status,
+    shipping_address_id,
+    delivery_method,
+    payment_method,
+    paypal_order_id,
+    date_created,
+    date_modified
+  ) VALUES (
+    :user_id,
+    :listings_id,
+    NOW(),
+    :total_amount,
+    'pending',
+    :shipping_address_id,
+    :shipping_method,
+    :payment_method,
+    :paypal_order_id,
+    NOW(),
+    NOW()
+  )
+");
 
-$userId            = $_SESSION['user_id'];
-$listingId         = (int)($input['listing_id'] ?? 0);
-$shippingAddressId = (int)($input['shipping_address_id'] ?? 0);
-$deliveryOption    = $input['delivery'] ?? '';
-$paymentMethod     = $input['payment'] ?? '';
-$orderID           = $input['orderID'] ?? null;
-
-$sql = "SELECT price, stock_quantity FROM listings WHERE listings_id = :id";
-$stmt = $pdo->prepare($sql);
-$stmt->execute(['id' => $listingId]);
-$listing = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$listing) {
-    http_response_code(404);
-    die("Listing not found.");
-}
-
-$orderAmount = $listing['price'];
-
-$status = ($paymentMethod === 'cod') ? 'completed' : 'pending';
-
-$sql = "INSERT INTO orders
-        (user_id, listings_id, shipping_address_id, delivery_option, payment_method, amount, status, date_created) 
-        VALUES 
-        (:user_id, :listings_id, :shipping_address_id, :delivery_option, :payment_method, :amount, :status, NOW())";
-
-$stmt = $pdo->prepare($sql);
-$stmt->execute([
-    'user_id'            => $userId,
-    'listings_id'         => $listingId,
-    'shipping_address_id'=> $shippingAddressId,
-    'delivery_option'    => $deliveryOption,
-    'payment_method'     => $paymentMethod,
-    'amount'             => $orderAmount,
-    'status'             => $status
+$success = $stmt->execute([
+  ':user_id' => $userId,
+  ':listings_id' => $listingId,
+  ':total_amount' => $totalAmount,
+  ':shipping_address_id' => $delivery === 'meetup' ? null : $addressId,
+  ':shipping_method' => $shippingMethod,
+  ':payment_method' => $paymentMethod,
+  ':paypal_order_id' => $paypalOrderId ?? null
 ]);
 
-$newOrderId = $pdo->lastInsertId();
+if ($success) {
+  $orderId = $pdo->lastInsertId();
 
-$updateStockSql = "UPDATE listings
-                    SET stock_quantity = stock_quantity - 1,
-                    listing_status = CASE 
-                                        WHEN stock_quantity - 1 <= 0 THEN 'sold' 
-                                        ELSE listing_status 
-                                    END
-                    WHERE listings_id = :listing_id
-                    AND stock_quantity > 0;
-                    ";
-$updateStockStmt = $pdo->prepare($updateStockSql);
-$updateStockStmt->execute(['listing_id' => $listingId]);
-
-
-if ($paymentMethod === 'cod') {
-    header("Location: order_success.php?order_id=" . $newOrderId);
+  if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_SERVER['CONTENT_TYPE'] !== 'application/json') {
+    header("Location: order_success.php?order_id=$orderId");
     exit;
-}
+  }
 
-if ($paymentMethod === 'paypal') {
-    echo json_encode([
-        'success' => true,
-        'order_id' => $newOrderId
-    ]);
-    exit;
+  echo json_encode(['status' => 'success', 'order_id' => $orderId]);
+} else {
+  http_response_code(500);
+  echo json_encode(['error' => 'Failed to create order']);
 }
-
-http_response_code(400);
-echo json_encode(['error' => 'Unsupported payment method']);
+?>

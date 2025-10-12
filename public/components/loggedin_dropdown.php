@@ -93,7 +93,7 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     <div class="dropdown-content" role="menu">
         <a href="/user.php?id=<?php echo($_SESSION['user_id']) ?>"><img src="/public/assets/images/icons/profile_icon.png" alt=""> Profile</a>
-        <a href="/chat.php"><img src="/public/assets/images/icons/chat_buble_icon.png" alt=""> Chats</a>
+        <a href="/messages.php"><img src="/public/assets/images/icons/message_buble_icon.png" alt=""> Chats</a>
         <a href="#"><img src="/public/assets/images/icons/notifications_icon.png" alt=""> Notifications</a>
         <a href=""><img src="/public/assets/images/icons/bookmark_icon.png" alt=""> Likes</a>
         <a href=""><img src="/public/assets/images/icons/listings_icon.png" alt=""> Listing</a>

@@ -12,8 +12,9 @@ $productQuery = "
     SELECT 
         l.*, 
         u.*, 
-        s.subcategory_name, 
+        s.subcategory_name,
         c.category_name,
+        c.category_id,
         l.date_created AS user_date_created,
         li.image_url,
         li.is_primary
@@ -96,15 +97,6 @@ $stmt3->execute(['listing_owner_id' => $product['listing_owner_id']]);
 $listingCount = $stmt3->fetchColumn();
 
 $productImg = '/products/' . $product['image_url'];
-$images = [
-    ["src" => $productImg, "alt" => "Pink shorts front view"],
-    ["src" => "product1.jpg", "alt" => "White shorts"],
-    ["src" => "product2.jpg", "alt" => "Black shorts"],
-    ["src" => "product3.jpg", "alt" => "Pink shorts rear view"],
-    ["src" => "product4.jpg", "alt" => "Orange shorts"],
-    ["src" => "product5.jpg", "alt" => "Orange shorts"]
-];
-$totalImages = count($images);
 
 $price = $product['price'];
 if (!empty($product['discount']) && $product['discount'] > 0) {
@@ -211,6 +203,7 @@ $similarListings = fetchListingsWithImages($pdo, $similarSql, [
     'sub_id'     => $product['subcategory_id'],
     'current_id' => $productId
 ]);
+
 ?>
 
 <!DOCTYPE html>
@@ -233,8 +226,8 @@ $similarListings = fetchListingsWithImages($pdo, $similarSql, [
 
 <main>
     <div class="product-view-wrapper">
-    <span id="test" style="display: none" type="text" name="" ><?= htmlspecialchars(json_encode($reviews), ENT_QUOTES, 'UTF-8') ?></span>
-    <span id="listingCount" style="display: none" type="text"><?php echo htmlspecialchars($listingCount); ?></span>
+        <span id="test" style="display: none" type="text" name="" ><?= htmlspecialchars(json_encode($reviews), ENT_QUOTES, 'UTF-8') ?></span>
+        <span id="listingCount" style="display: none" type="text"><?php echo htmlspecialchars($listingCount); ?></span>
     <div class="product-view-container">
         <div class="product-view-left">
             <div class="product-view-gallery">
@@ -242,14 +235,13 @@ $similarListings = fetchListingsWithImages($pdo, $similarSql, [
                     <img src="/public/assets/images/products/<?= htmlspecialchars($img['url']) ?>" 
                         alt="<?= htmlspecialchars($product['name']) ?>">
                 <?php endforeach; ?>
-
             </div>
+
             <div id="lightbox" class="lightbox">
                 <span class="lightbox-close">&times;</span>
                 <img class="lightbox-image" src="" alt="">
                 <span class="lightbox-prev">&#10094;</span>
                 <span class="lightbox-next">&#10095;</span>
-
                 <div class="lightbox-thumbnails"></div>
             </div>
 
@@ -366,17 +358,15 @@ $similarListings = fetchListingsWithImages($pdo, $similarSql, [
 
         </div>
     </div>
-    <?php if (isset($_SESSION['user_id']) && $_SESSION['user_id'] != $product['listing_owner_id']) {
-                    ?>
-    <div class="product-view-recently-viewed">
+
+    <!-- <div class="product-view-recently-viewed">
         <p class="product-view-recently-viewed-header">Recently Viewed</p>
-        <div class="products-display">
+        <div class="products-display-horizontal">
             <?php foreach ($recentlyVieweds as $listing): ?>
                 <?php include './public/components/listing_card.php'  ?>
             <?php endforeach; ?>
         </div>
     </div>
-    <?php }?>
 
     <div class="product-view-recently-viewed">
         <p class="product-view-recently-viewed-header">Similar Listings</p>
@@ -385,13 +375,13 @@ $similarListings = fetchListingsWithImages($pdo, $similarSql, [
                 <?php include './public/components/listing_card.php'  ?>
             <?php endforeach; ?>
         </div>
-    </div>
+    </div> -->
     
     <div>
         <ul class="breadcrumb">
             <li><a href="/">Home</a></li>
-            <li><a href="/shop"><?= htmlspecialchars($product['category_name']) ?></a></li>
-            <li><a href="/shop/electronics"><?= htmlspecialchars($product['subcategory_name']) ?></a></li>
+            <li><a href="/search.php?category=<?= htmlspecialchars($product['category_id']) ?>"><?= htmlspecialchars($product['category_name']) ?></a></li>
+            <li><a href="/search.php?subcategory=<?= htmlspecialchars($product['subcategory_id']) ?>"><?= htmlspecialchars($product['subcategory_name']) ?></a></li>
             <li><?= htmlspecialchars($product['name']) ?></li>
         </ul>
     </div>
@@ -406,7 +396,7 @@ $similarListings = fetchListingsWithImages($pdo, $similarSql, [
     <?php if ($product['listing_status'] === 'unavailable'): ?>
     <script>
         document.getElementById('unavailable-dialog').showModal();
-       document.getElementById('unavailable-dialog').querySelector('p').focus();
+        document.getElementById('unavailable-dialog').querySelector('p').focus();
     </script>
     <?php endif; ?>
 </main>
@@ -508,30 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        const shareBtn = document.getElementById('share-btn');
-        if (shareBtn) {
-            shareBtn.addEventListener('click', () => {
-                const pageUrl = window.location.href;
-                navigator.clipboard.writeText(pageUrl)
-                    .then(() => showCopiedMessage('Link copied to clipboard!'))
-                    .catch(err => {
-                        console.error('Failed to copy:', err);
-                        showCopiedMessage('Failed to copy link');
-                    });
-            });
-        }
-
-        function showCopiedMessage(message) {
-            const msg = document.createElement('div');
-            msg.textContent = message;
-            msg.className = 'copied-message';
-            document.body.appendChild(msg);
-            requestAnimationFrame(() => msg.classList.add('visible'));
-            setTimeout(() => {
-                msg.classList.remove('visible');
-                msg.addEventListener('transitionend', () => msg.remove(), { once: true });
-            }, 2000);
-        }
+        <?php include './public/javascripts/share_btn.js' ?>
 
         const bookmarkBtn = document.getElementById('product-view-bookmark-btn');
         if (bookmarkBtn) {
@@ -568,11 +535,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const listingId = <?php echo (int)$product1['listings_id']; ?>;
     console.log(listingId);
 
-    function postToCreateChat(data) {
+    function postToCreateChat(data, action) {
+    const payload = { ...data, action };
     fetch('/includes/create_chat.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify(payload)
     })
     .then(res => res.json())
     .then(response => {
@@ -588,11 +556,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     }
 
-    document.getElementById('create_chat').addEventListener('click', function () {
-    postToCreateChat({ listings_id: listingId });
-    });
+</script>
+<?php if (isset($_SESSION['user_id']) && $_SESSION['user_id'] != $product['listing_owner_id']): ?>
+<script>
+document.getElementById('create_chat').addEventListener('click', function () {
+    postToCreateChat({ listings_id: listingId }, 'create_chat');
+});
 
-    document.getElementById('make_offer').addEventListener('click', function () {
+document.getElementById('make_offer').addEventListener('click', function () {
     const offerField = document.getElementById('price-offer-field');
     const offer = parseFloat(offerField.value);
 
@@ -602,9 +573,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    postToCreateChat({ listings_id: listingId, offer_amount: offer });
-    });
+    postToCreateChat({ listings_id: listingId, offer_amount: offer }, 'make_offer');
+});
 </script>
+<?php endif; ?>
 
 </body>
 </html>

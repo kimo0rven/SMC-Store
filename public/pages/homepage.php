@@ -94,20 +94,50 @@ $categories = $stmt -> fetchAll(PDO::FETCH_ASSOC);
     <?php include './public/components/header.php' ?>
 </header>
 
-<main style="flex-direction:column; justify-content: center; align-items:center">
+<main style="flex-direction:column; justify-content: center; align-items:center; gap: 0">
         <div class="products-categories">
             <?php foreach ($categories as $category): ?>
-                <a href="/search.php?category=<?= htmlspecialchars($category['category_id']) ?>">
-                    <div class="products-category">
-                        <img src="/public/assets/images/product1.jpg" 
-                            alt="<?= htmlspecialchars($category['category_name']) ?>">
-                        <p><?= htmlspecialchars($category['category_name']) ?></p>
-                    </div>
-                </a>
+                <a href="/search.php?category=<?= htmlspecialchars($category['category_id']) ?>" class="products-category">
+                <div class="category-image">
+                    <img src="/public/assets/images/icons/categories/<?= htmlspecialchars($category['category_image']) ?>" alt="<?= htmlspecialchars($category['category_name']) ?>">
+                </div>
+    <p><?= htmlspecialchars($category['category_name']) ?></p>
+</a>
+
             <?php endforeach; ?>
         </div>
 
+        <section class="home-slogan">
+            <h2 class="home-slogan-heading">
+                Sell and Buy. Your Campus, Your Store
+            </h2>
+            <div class="home-slogan-points">
+                <div class="home-slogan-point">
+                <img class="home-slogan-icon" src="/public/assets/images/icons/homepage/123.png" alt="">
+                <p class="home-slogan-text">1 in 2 students find what they need on campus</p>
+                </div>
+
+                <div class="home-slogan-point">
+                <img class="home-slogan-icon" src="/public/assets/images/icons/homepage/123123.png" alt="">
+                <p class="home-slogan-text">Turn your extra stuff into extra cash</p>
+                </div>
+
+                <div class="home-slogan-point">
+                <img class="home-slogan-icon" src="/public/assets/images/icons/homepage/123123123.png" alt="">
+                <p class="home-slogan-text">Buy unique finds at a fraction of the cost</p>
+                </div>
+            </div>
+        </section>
+
+        <section style="padding:0" class="home-slogan">
+            <div id="homepage-recommended-for-you">
+                <h2 style="margin:0" class="home-slogan-heading">
+                    Recommended For You
+                </h2>
+            </div>
+        </section>
         <div class="products-wrapper">
+            
             <div class="products-display">
                 <?php foreach ($products as $listing): ?>
                     <?php include './public/components/listing_card.php'  ?>

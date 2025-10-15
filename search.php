@@ -234,17 +234,18 @@ if (!empty($searchQuery)) {
                         </form>
 
 					</div>
-					<div class="products-wrapper">
-						<div class="products-display">
-							<?php if (!empty($products)): ?>
-							<?php foreach ($products as $listing): ?>
-							<?php include "./public/components/listing_card.php"; ?>
-							<?php endforeach; ?>
-							<?php else: ?>
-							<p>No products found.</p>
-							<?php endif; ?>
-						</div>
-					</div>
+					<div class="search-wrapper">
+                        <div class="search-display">
+                            <?php if (!empty($products)): ?>
+                                <?php foreach ($products as $listing): ?>
+                                    <?php include "./public/components/listing_card.php"; ?>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <p>No products found.</p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
 				</div>
 			</div>
 		</main>

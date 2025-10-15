@@ -205,7 +205,6 @@ dialog::backdrop {
   user-select: none;
 }
 
-/* Main Layout */
 main {
   display: flex;
   justify-content: space-around;
@@ -213,7 +212,6 @@ main {
   gap: 5rem;
 
 }
-
 
 .products-categories {
   display: flex;
@@ -230,14 +228,20 @@ main {
   display: none;
 }
 
-
 .products-category {
+  display: flex;
   flex: 0 0 120px;
   scroll-snap-align: start;
-  display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
+  color: inherit;
+}
+
+.category-image {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
 }
 
 .products-category img {
@@ -251,6 +255,46 @@ main {
   margin-top: 0.5rem;
   font-size: 14px;
 }
+.home-slogan {
+  text-align: center;
+  padding: 1.5rem 1rem;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.home-slogan-heading {
+  display: flex;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+}
+
+.home-slogan-points {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.home-slogan-point {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.home-slogan-icon {
+  width: 120px;
+  height: auto;
+}
+
+.home-slogan-text {
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin: 0;
+  line-height: 1.4;
+}
 
 .products-wrapper {
   width: 100%;
@@ -259,14 +303,6 @@ main {
   padding: 2rem;
 }
 
-/* .products-display {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 3rem;
-  width: 100%;
-  margin: 0;
-  max-width: none;
-} */
 .products-display {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -275,22 +311,21 @@ main {
   margin: 0;
 }
 
-/* Product Cards */
+.listing-card-link {
+  text-decoration: none;
+  color: inherit;
+  flex: 0 0 220px;
+  display: block;
+}
+
 .listing-card {
   background: #fff;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  width: 265px;
+  width: 100%;
+  height: 100%;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  
-}
-
-.listing-card-link {
-  text-decoration: none;
-  color: inherit;
-  display: block;
-  
 }
 
 .listing-card:hover {
@@ -309,6 +344,7 @@ main {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
 .listing-details {
@@ -803,14 +839,10 @@ ul.breadcrumb li a:hover {
 }
 
 .seller-dialog-actions button.followed {
-  background-color: #002147;
-  color: #ffffff;
-  border: 1px solid #ccc;
+  background-color: #fcfcfc;
+  color: #000;
+  border: 1px solid #000;
   box-shadow: none;
-}
-
-.product-view-action-buttons-container button.followed:hover {
-  background-color: #d5d5d5;
 }
 
 .make-offer-btn {
@@ -1210,9 +1242,8 @@ ul.breadcrumb li a:hover {
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  padding: 1rem 0rem;
-  gap: 1rem;
-
+  /* padding: 1rem 0rem;
+  gap: 1rem; */
 }
 
 .upload-container {
@@ -1306,6 +1337,13 @@ ul.breadcrumb li a:hover {
   flex-direction: column;
   align-items: stretch;
   gap: 1rem;
+}
+
+.sell-page-details-page-title {
+  font-size: 32px; 
+  margin: 0;
+  letter-spacing: 0.02em; 
+  text-transform: uppercase;
 }
 
 .sell-page-details-page input,
@@ -1426,7 +1464,7 @@ ul.breadcrumb li a:hover {
 
 .inbox-left-side {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 0.5rem;
 }
 
@@ -1835,6 +1873,8 @@ ul.breadcrumb li a:hover {
   padding: 0.5rem 0;
   overflow-x: auto;
   overflow-y: hidden;
+  border: solid 1px #dadada;
+  padding: 1rem;
 }
 
 .search-filters {
@@ -1853,6 +1893,144 @@ ul.breadcrumb li a:hover {
 .search-form-filter select {
   flex: 1;
   padding: 0.5rem;
+}
+
+.search-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.search-display {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  width: 100%;
+}
+
+main, .flex.column, .user-profile-container {
+  width: 95%;
+  max-width: 100vw;
+  margin: 0 auto;
+}
+
+.user-profile-left,
+.user-profile-right {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.user-profile-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 100vw;
+  margin: 0; 
+  box-sizing: border-box;
+}
+
+.user-profile-right {
+  flex: 3;
+  /* border: 1px solid #dadada; */
+  /* padding: 1rem; */
+  box-sizing: border-box;
+}
+
+.user-profile-left {
+  flex: 1;
+  box-sizing: border-box;
+  border: 1px solid #dadada;
+  padding: 1rem;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.user-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  order: 1;
+}
+
+.user-profile-header img {
+  height: auto;
+  width: 64px;
+  border-radius: 50%;
+}
+
+.user-profile-header-name {
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+.user-profile-header-middle {
+  display: flex;
+  gap: 1rem;
+  order: 3;
+  color: #6a6a6a;
+}
+
+.user-profile-tabs {
+  display: flex;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.user-profile-tabs .chat-btn.active {
+  background-color: #ffffff;
+  color: #000000;
+  border: 1px solid black;
+  font-weight: bold;
+}
+
+
+.user-header-right-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  order: 2;
+}
+
+.user-profile-right {
+  flex: 3;
+  box-sizing: border-box;
+  /* padding: 0.5rem; */
+}
+.user-profile-right-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.user-profile-right-display {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 2 per row on mobile */
+  gap: 1rem;
+  width: 100%;
+}
+
+.purchases-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
+.purchases-overview {
+  display: flex;
+}
+
+.purchases-display {
+  border: 1px solid #dadada;
 }
 
 @media (max-width: 768px) {
@@ -1927,23 +2105,53 @@ ul.breadcrumb li a:hover {
   }
 
   .products-display {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   }
 
   .products-categories {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
     overflow: visible;
     gap: 1rem;
+    justify-items: center; 
     width: 75%;
   }
 
   .products-category {
+    flex: 0 0 200px;
     flex: unset;
   }
 
   .category-list div:hover {
     text-decoration: underline;
+  }
+
+  .home-slogan {
+    width: 75%;
+    padding: 1.5rem 0;
+  }
+
+  .home-slogan-heading {
+    justify-content: flex-start;
+    font-size: 1.5rem;
+  }
+
+  .home-slogan-points {
+    flex-direction: row;
+    justify-content: space-evenly;
+    flex-wrap: wrap;
+  }
+
+  .home-slogan-icon {
+    width: 180px;
+  }
+
+  .home-slogan-text {
+    font-size: 1rem;
+  }
+
+  #homepage-recommended-for-you {
+    margin: 2rem 0;
   }
 
   .product-view-container {
@@ -2107,7 +2315,29 @@ ul.breadcrumb li a:hover {
 
   .inbox-left-side {
     flex: 0 0 250px;
+    display: flex;
+    flex-direction: column;
   }
+
+  .inbox-left-side a {
+    text-decoration: none;
+    width: 100%;
+  }
+
+  .inbox-left-side button {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1rem;
+
+  }
+
+  .inbox-left-side button.active {
+  background-color: #ffffff;
+  color: #000;
+  font-weight: bold;
+  border: solid black 1px;
+  }
+
 
   .inbox-right-side {
     height: 80vh;
@@ -2156,5 +2386,42 @@ ul.breadcrumb li a:hover {
   .message small {
     font-size: 0.8rem;
   }
+
+  .search-display {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+
+  }
+
+  .search-display {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 200px); /* fixed 200px columns */
+    gap: 1rem;
+    justify-content: center; /* center the grid if last row has fewer items */
+  }
+  main, .flex.column, .user-profile-container {
+    width: 90%;
+    margin: 0 auto;
+  }
+
+  .user-profile-header {
+    order: 1;
+  }
+
+  .user-profile-header-middle {
+    order: 2;
+  }
+
+  .user-header-right-actions {
+    order: 3;
+  }
+  
+  .user-profile-right-display {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 200px);
+    gap: 1rem;
+    justify-content: center;
+  }
+
+
 
 }

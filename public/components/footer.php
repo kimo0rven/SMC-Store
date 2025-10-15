@@ -8,7 +8,7 @@ $topStmt = $pdo->query("
     WHERE created_at >= NOW() - INTERVAL 7 DAY
     GROUP BY keyword
     ORDER BY count DESC
-    LIMIT 5
+    LIMIT 50
 ");
 $topSearches = $topStmt->fetchAll(PDO::FETCH_ASSOC);
 ?>

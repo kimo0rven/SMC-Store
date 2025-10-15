@@ -13,10 +13,21 @@ if (!isset($_SESSION['user_id'])) {
 
 require './includes/db_connection.php';
 
+$type = $_GET['type'] ?? 'inbox';
+
+$whereClause = "WHERE c.seller_id = :uid OR c.buyer_id = :uid";
+
+if ($type === 'selling') {
+    $whereClause = "WHERE c.seller_id = :uid";
+} elseif ($type === 'buying') {
+    $whereClause = "WHERE c.buyer_id = :uid";
+}
+
 $convoQuery = "
     SELECT c.conversation_id,
            c.seller_id,
            c.buyer_id,
+           c.current_offer_amount,
            l.name AS listing_name,
            l.price AS listing_price,
            u1.first_name AS seller_first_name,
@@ -29,7 +40,7 @@ $convoQuery = "
     JOIN user u2 ON c.buyer_id = u2.user_id
     LEFT JOIN listings l ON c.listings_id = l.listings_id
     LEFT JOIN conversation_message m ON c.conversation_id = m.conversation_id
-    WHERE c.seller_id = :uid OR c.buyer_id = :uid
+    $whereClause
     GROUP BY c.conversation_id
     ORDER BY c.created_at ASC
 ";
@@ -37,7 +48,6 @@ $convoQuery = "
 $stmt = $pdo->prepare($convoQuery);
 $stmt->execute([':uid' => $_SESSION['user_id']]);
 $conversations = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
 
 ?>
 
@@ -59,12 +69,22 @@ $conversations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <main class="inbox-main">
     <section class="inbox">
         <div class="inbox-left-side">
-            <button>Message</button>
-            <button>Unread</button>
+            <a href="?type=inbox">
+                <button class="<?= ($type === 'inbox') ? 'active' : '' ?>">Inbox</button>
+            </a>
+            <a href="?type=selling">
+                <button class="<?= ($type === 'selling') ? 'active' : '' ?>">Selling</button>
+            </a>
+            <a href="?type=buying">
+                <button class="<?= ($type === 'buying') ? 'active' : '' ?>">Buying</button>
+            </a>
         </div>
 
+
         <div class="inbox-right-side">
-            <div class="inbox-header">Inbox</div>
+            <div class="inbox-header">
+                <?= ucfirst($type) ?>
+            </div>
             <?php if (!empty($conversations)): ?>
                 <?php foreach($conversations as $conv): ?>
                     <?php
@@ -81,7 +101,7 @@ $conversations = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             </div>
                             <div>
                                 <?= htmlspecialchars($otherName) ?><br>
-                                <small><?= htmlspecialchars($conv['listing_name']) ?> - $<?= $conv['listing_price'] ?></small>
+                                <small><?= htmlspecialchars($conv['listing_name']) ?> - PHP<?= $conv['current_offer_amount'] ?></small>
                                 <?php if ($conv['unread_count'] > 0): ?>
                                     <span class="badge"><?= $conv['unread_count'] ?></span>
                                 <?php endif; ?>

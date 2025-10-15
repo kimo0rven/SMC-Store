@@ -5,15 +5,15 @@ $query = "
     SELECT COUNT(*)
     FROM follow
     WHERE follower_id = :follower_id
-      AND followed_id = :user_id
+    AND followed_id = :user_id
 ";
 $stmt = $pdo->prepare($query);
 $stmt->execute([
-    'follower_id' => isset($_SESSION['id']),
-    'user_id'     => $product['listing_owner_id']
+    'follower_id' => (int)$_SESSION['user_id'],
+    'user_id'     => (int)$product['listing_owner_id']
 ]);
 $follows = $stmt->fetchColumn();
-
+$isFollowing = ($follows > 0);
 ?>
 
 <dialog id="sellerDialog">
@@ -47,9 +47,27 @@ $follows = $stmt->fetchColumn();
             </div>
 
             <div class="seller-dialog-actions">
-                <button id="seller-dialog-follow-btn" data-seller="<?= htmlspecialchars($product['listing_owner_id']) ?>" data-user="<?= htmlspecialchars($_SESSION['user_id']) ?>" data-follow="<?= htmlspecialchars($follows) ?>"><img src="/public/assets/images/icons/follow_user_icon.png"> Follow Seller</button>
-                <button id="seller-dialog-contact-btn">Contact</button>
-                <button id="seller-dialog-visit-btn">Visit Store</button>
+                <?php if ((int)$product['listing_owner_id'] === (int)$_SESSION['user_id']): ?>
+                    <button id="seller-dialog-contact-btn"  
+                            data-seller="<?= (int)$product['listing_owner_id'] ?>"
+                            data-user="<?= (int)$_SESSION['user_id'] ?>"
+                            data-follow="<?= $isFollowing ? 1 : 0 ?>" style="display:none;">Contact</button>
+                    <button id="seller-dialog-visit-btn">Visit Store</button>
+                <?php else: ?>
+                    <button id="seller-dialog-follow-btn"
+                            data-seller="<?= (int)$product['listing_owner_id'] ?>"
+                            data-user="<?= (int)$_SESSION['user_id'] ?>"
+                            data-follow="<?= $isFollowing ? 1 : 0 ?>"
+                            class="<?= $isFollowing ? 'followed' : '' ?>">
+                        <?php if ($isFollowing): ?>
+                            Following
+                        <?php else: ?>
+                            <img src="/public/assets/images/icons/follow_user_icon.png" alt=""> Follow Seller
+                        <?php endif; ?>
+                    </button>
+                    <button id="seller-dialog-contact-btn">Contact</button>
+                    <button id="seller-dialog-visit-btn">Visit Store</button>
+                <?php endif; ?>
             </div>
 
         </div>
@@ -152,7 +170,7 @@ $follows = $stmt->fetchColumn();
 
             document.getElementById('seller-content-review-count').textContent = "(" + JSON.parse(dialog.dataset.reviews).length + ")";
 
-            // document.getElementById('seller-dialog-follow-btn').dataset.seller = reviews.seller_id
+            // document.getElementById('seller-dialog-follow-btn').dataset.seller = dialog.dataset.sellerId;
 
             const wrapper = document.getElementsByClassName('seller-content-review-wrapper')[0];
             if (reviews.length > 0) {
@@ -166,7 +184,7 @@ $follows = $stmt->fetchColumn();
                     header.classList.add('seller-content-reviews-header');
                     
                     const name = document.createElement('div');
-                    name.classList.add('.seller-content-reviews-name');
+                    name.classList.add('seller-content-reviews-name');
                     if(review.anonymous) {
                         name.textContent = maskName(review.first_name) + " " + maskName(review.last_name);
                     } else {
@@ -242,11 +260,13 @@ $follows = $stmt->fetchColumn();
     const followBtn  = document.querySelector('.seller-dialog-actions button');
     const contactBtn = document.getElementById('seller-dialog-contact-btn');
 
-    const sellerId = parseInt(followBtn.dataset.seller, 10);
+    let sellerId = parseInt(followBtn.dataset.seller, 10);
     const userId   = parseInt(followBtn.dataset.user, 10);
     let followCount = parseInt(followBtn.dataset.follow, 10);
 
+    console.log(followBtn.dataset)
 
+    
     if (sellerId === userId) {
         followBtn.style.display = 'none';
         contactBtn.style.display = 'none';
@@ -274,15 +294,12 @@ $follows = $stmt->fetchColumn();
                 .then(data => {
                     if (data.success) {
                         followCount = 0;
+                        followBtn.dataset.follow = "0";
                         followBtn.classList.remove('followed');
                         followBtn.innerHTML = '<img src="/public/assets/images/icons/follow_user_icon.png"> Follow Seller';
-                    } else {
-                        alert(data.message || 'Error unfollowing seller');
                     }
-                })
-                .catch(err => console.error(err));
-            } 
-            else {
+                });
+            } else {
                 fetch('/includes/follow.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -292,24 +309,25 @@ $follows = $stmt->fetchColumn();
                 .then(data => {
                     if (data.success) {
                         followCount = 1;
+                        followBtn.dataset.follow = "1";
                         followBtn.classList.add('followed');
                         followBtn.textContent = 'Following';
-                    } else {
-                        alert(data.message || 'Error following seller');
                     }
-                })
-                .catch(err => console.error(err));
+                });
             }
-        })
-        
+        });
     });
 
     const storeBtn = document.getElementById('seller-dialog-visit-btn');
     const sellerName = document.getElementById('seller-content-name-id');
     [storeBtn, sellerName].forEach(btn => {
         btn.addEventListener('click', () => {
-            window.location.href = "/user.php?id=" + btn.dataset.seller;
+            window.location.href = "/user.php?id=" + sellerId;
         });
+    });
+
+    document.getElementById('seller-dialog-contact-btn').addEventListener('click', function () {
+        postToCreateChat({ listings_id: listingId }, 'create_chat');
     });
 
 </script>

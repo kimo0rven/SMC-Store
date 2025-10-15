@@ -29,7 +29,12 @@ $categories = $stmt->fetchAll();
 </header>
 
 <main>
-    <form action="./includes/submit_listing.php" method="POST" enctype="multipart/form-data" class="sell-page-container">
+    <div style="margin: 5rem" class="flex column">
+        <div>
+            <h3 style="font-size:2.25rem;text-transform:uppercase;margin:0">Sell your product</h3>
+        </div>
+        <div>
+            <form action="./includes/submit_listing.php" method="POST" enctype="multipart/form-data" class="sell-page-container">
         
         <div class="sell-page-upload-page">
             <label class="upload-container">
@@ -44,6 +49,7 @@ $categories = $stmt->fetchAll();
         </div>
 
         <div class="sell-page-details-page">
+            <h3 class="sell-page-details-page-title">Product Details</h3>
             <div class="sell-page-details-category-wrapper">
                 <input type="hidden" name="category" id="sell-page-details-category-input">
                 <input type="hidden" name="subcategory" id="sell-page-details-subcategory-input">
@@ -108,10 +114,12 @@ $categories = $stmt->fetchAll();
             </div>
 
             <div class="sell-page-details-last">
-                <button type="submit">Post Listing</button>
+                <button class="chat-btn" type="submit">Post Listing</button>
             </div>
         </div>
     </form>
+        </div>
+    </div>
 </main>
 
 <footer>

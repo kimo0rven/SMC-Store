@@ -43,7 +43,6 @@
     min-width: 160px;
     box-shadow: 0 8px 16px rgba(0,0,0,0.2);
     margin-top: 5px;
-    border-radius: .5rem;
     z-index: 999;
 }
 
@@ -64,7 +63,6 @@
 
 .dropdown-content a:hover {
     background-color: #dadada;
-    border-radius: .5rem;
 
 }
 
@@ -75,6 +73,12 @@
 .dropdown.open .arrow {
     transform: rotate(180deg);
 }
+
+.dropdown-divider {
+    border-top: 1px solid #ddd;
+    margin: 0.5rem 0;
+}
+
 
 </style>
 
@@ -94,10 +98,15 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
     <div class="dropdown-content" role="menu">
         <a href="/user.php?id=<?php echo($_SESSION['user_id']) ?>"><img src="/public/assets/images/icons/profile_icon.png" alt=""> Profile</a>
         <a href="/messages.php"><img src="/public/assets/images/icons/message_buble_icon.png" alt=""> Chats</a>
-        <a href="#"><img src="/public/assets/images/icons/notifications_icon.png" alt=""> Notifications</a>
-        <a href=""><img src="/public/assets/images/icons/bookmark_icon.png" alt=""> Likes</a>
-        <a href=""><img src="/public/assets/images/icons/listings_icon.png" alt=""> Listing</a>
+        <a href="/purchases.php"><img src="/public/assets/images/icons/orders.png" alt=""> Purchases</a>
+        <a href="/sales.php"><img src="/public/assets/images/icons/sales.png" alt=""> Sales</a>
+        <a href="/user.php?id=<?php echo($_SESSION['user_id']) ?>&type=likes"><img src="/public/assets/images/icons/bookmark_icon.png" alt=""> Likes</a>
+        <a href="/user.php?id=<?php echo($_SESSION['user_id']) ?>&type=listings"><img src="/public/assets/images/icons/listings_icon.png" alt=""> Listing</a>
+        <hr class="dropdown-divider">
         <a href="/logout.php"><img src="/public/assets/images/icons/logout_icon.png" alt=""> Log out</a>
+        <div class="dropdown-content" role="menu">
+</div>
+
     </div>
 </div>
 

@@ -1,5 +1,5 @@
 <a href="/product.php?id=<?= urlencode($listing['listings_id']) ?>" target="_blank" class="listing-card-link">
-    <div class="listing-card" data-lazy-card>
+    <div class="listing-card" data-lazy-card >
         <div class="product-image slideshow-container">
             <div class="slides-track">
                 <?php foreach ($listing['images'] as $img): ?>

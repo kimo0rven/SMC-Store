@@ -256,6 +256,8 @@ main {
   font-size: 14px;
 }
 .home-slogan {
+  display: flex;
+  flex-direction: column;
   text-align: center;
   padding: 1.5rem 1rem;
   width: 100%;
@@ -1475,6 +1477,7 @@ ul.breadcrumb li a:hover {
   color: #dadada;
   cursor: pointer;
   transition: background 0.2s;
+  width: 100%;
 }
 
 .inbox-right-side {
@@ -2127,6 +2130,7 @@ main, .flex.column, .user-profile-container {
   }
 
   .home-slogan {
+    flex-direction: row;
     width: 75%;
     padding: 1.5rem 0;
   }

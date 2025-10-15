@@ -107,7 +107,7 @@ $categories = $stmt -> fetchAll(PDO::FETCH_ASSOC);
             <?php endforeach; ?>
         </div>
 
-        <section class="home-slogan">
+        <!-- <section class="home-slogan">
             <h2 class="home-slogan-heading">
                 Sell and Buy. Your Campus, Your Store
             </h2>
@@ -127,7 +127,7 @@ $categories = $stmt -> fetchAll(PDO::FETCH_ASSOC);
                 <p class="home-slogan-text">Buy unique finds at a fraction of the cost</p>
                 </div>
             </div>
-        </section>
+        </section> -->
 
         <section style="padding:0" class="home-slogan">
             <div id="homepage-recommended-for-you">

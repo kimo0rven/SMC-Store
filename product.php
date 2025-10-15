@@ -537,7 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function postToCreateChat(data, action) {
     const payload = { ...data, action };
-    fetch('/includes/create_chat.php', {
+    fetch('/includes/create_message.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -556,27 +556,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     }
 
+
+    document.getElementById('create_chat').addEventListener('click', function () {
+        console.log("create_chat")
+        postToCreateChat({ listings_id: listingId }, 'create_chat');
+    });
+
+    document.getElementById('make_offer').addEventListener('click', function () {
+        const offerField = document.getElementById('price-offer-field');
+        const offer = parseFloat(offerField.value);
+
+        if (!offer || offer <= 0) {
+            alert("Please enter a valid offer amount.");
+            offerField.focus();
+            return;
+        }
+        console.log("make offer");
+        postToCreateChat({ listings_id: listingId, offer_amount: offer }, 'make_offer');
+    });
 </script>
-<?php if (isset($_SESSION['user_id']) && $_SESSION['user_id'] != $product['listing_owner_id']): ?>
-<script>
-document.getElementById('create_chat').addEventListener('click', function () {
-    postToCreateChat({ listings_id: listingId }, 'create_chat');
-});
 
-document.getElementById('make_offer').addEventListener('click', function () {
-    const offerField = document.getElementById('price-offer-field');
-    const offer = parseFloat(offerField.value);
-
-    if (!offer || offer <= 0) {
-        alert("Please enter a valid offer amount.");
-        offerField.focus();
-        return;
-    }
-
-    postToCreateChat({ listings_id: listingId, offer_amount: offer }, 'make_offer');
-});
-</script>
-<?php endif; ?>
 
 </body>
 </html>

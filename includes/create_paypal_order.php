@@ -2,8 +2,9 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-$clientId = 'AdKIMo4pfQ_z4QD24wosQfk_TqH8TVXKWgMZ1h77OzcL1fG9_3nMoxhR9uwy6AXzDIhnpyC8RFfuiDkh';
-$secret = 'EEbrRiJFIftW79k1sdc6YTcwMEFdD-QAejF-7VUjaQXWvnkEY8SDf81TQmp5UGG3BT-Uq031m7iwXx_l';
+$creds = require __DIR__ . '/./credentials.php.php';
+$clientId = $creds['client_id'];
+$secret = $creds['client_secret'];
 
 $ch = curl_init();
 curl_setopt($ch, CURLOPT_URL, "https://api-m.sandbox.paypal.com/v1/oauth2/token");
